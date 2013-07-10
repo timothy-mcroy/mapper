@@ -29,6 +29,10 @@ Indices and tables
 * :ref:`modindex`
 * :ref:`search`
 
+Current release: |release|
+
+Quick download link: http://math.stanford.edu/~muellner/mapper/mapper.tar.gz
+
 .. important::
    Python Mapper is still experimental. Please expect no stable features yet.
 
