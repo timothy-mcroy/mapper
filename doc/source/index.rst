@@ -1,0 +1,35 @@
+.. Python Mapper documentation master file, created by
+   sphinx-quickstart on Thu Mar 22 16:46:08 2012.
+   You can adapt this file completely to your liking, but it should at least
+   contain the root `toctree` directive.
+
+Welcome to the Python Mapper documentation!
+===========================================
+
+Mapper is an algorithm for exploration, analysis and visualization of data.
+
+.. Contents:
+
+.. toctree::
+   :maxdepth: 2
+
+   introduction
+   installation
+   quickstart
+   input
+   filters
+   cover
+   ownpythoncode
+   legal
+
+Indices and tables
+------------------
+
+* :ref:`genindex`
+* :ref:`modindex`
+* :ref:`search`
+
+.. important::
+   Python Mapper is still experimental. Please expect no stable features yet.
+
+   Please report bugs to `Daniel Müllner <mailto:muellner@math.stanford.edu>`_. I am sure that there are dozens of tiny lapses that can be easily repaired, among more serious bugs, of course.

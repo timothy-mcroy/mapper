@@ -1,0 +1,135 @@
+cmappertools: Tools for the Python Mapper in C++
+
+Copyright © 2012 Daniel Müllner
+<http://math.stanford.edu/~muellner>
+
+License
+-------
+
+The cmappertools package is licensed under the GNU General Public License (GPL)
+Version 3. See <http://www.gnu.org/licenses/gpl.html>
+
+Installation
+------------
+
+1) Run
+
+    sudo python setup.py install
+
+   or
+
+    python setup.py install --user
+
+2) Or run
+
+    python setup.py build
+
+   and copy the compiled dynamic library file (cmappertools.so on Linux)
+   to somewhere in your Python path.
+
+
+The compiled cmappertools library is imported directly by Python, without
+a wrapper.
+
+The library can be compiled for both Python 2.x and 3.x.
+
+Usage
+-----
+
+The provided functions are:
+
+kernel_filter::eccentricity
+
+  Eccentricity filter for vector and dissimilarity data; parallel processing
+
+kernel_filter::Gauss_density
+
+  Gaussian density filter for vector and dissimilarity data; parallel
+  processing
+
+neighborhood_graph
+
+  This function constructs a neighborhood graph from a compressed distance
+  matrix. An edge (v,w) is in the neighborhood graph if one of the following
+  holds:
+
+    (1) the distance d(v,w) is not more than epsilon,
+    (2) v is among the k nearest neighbors of w,
+    (3) w is among the k nearest neighbors of v.
+
+  As everywhere else in Python Mapper, the k nearest neighbors of a point
+  start with the point itself, so values k<=1 do not produce any edges, and
+  k=2 connects a point to its closest neighbor.
+
+  The edge weight is the distance d(v,w).
+
+  Input: D : a compressed distance matrix
+         k : the number of neighbors. Default: 1
+         eps : the epsilon from item (1). Default: 0.
+         diagonal : Boolean. Whether to include the diagonal (loop edges
+                    with zero weight) or not. Default: False
+         callback : callback function to report progress. Default: None
+         verbose : If True, the functions prints out the minimal epsilon
+                   to make the graph connected (without nearest neighbors,
+                   ie for k=1). Default: True
+
+  Output: Three NumPy arrays "rowstart", "targets", "weights", which comprise
+          the data structure for a weighted, bidirectional CSR graph. See
+          the class csr_graph_generator in the source code for details.
+
+ncomp
+
+  Number of components of a graph.
+
+  Input: rowstart, targets : CSR graph
+         weights (optional) : ignored
+  Output: number of components
+
+graph_distance
+
+  Shortest path metric on a graph. The C++ function takes the NumPy arrays as
+  being output by "neighborhood_graph". Parallel processing.
+
+  Input: rowstart, targets, weights : CSR representation of the graph. See the
+                                      class csr_graph_generator in the source
+                                       code for details.
+         callback : callback function to report progress. Default: None
+
+  Output: Compressed distance matrix. If the graph is disconnected, some
+          of the distances are infinite.
+
+_conn_comp_loop
+
+  Incrementally find the number of connected components of a graph.
+
+nearest_neighbors_from_dm
+
+  Input:  D compressed distance matrix
+          k number of nearest neighbors
+          callback : callback function to report progress. Default: None
+
+  Output: d, j distances and indices to the nearest neighbors
+
+compressed_submatrix
+
+  Extract from a compressed distance matrix the corresponding matrix for
+  a subset of points without bringing the matrix into square form first.
+
+  Input: dm  compressed distance matrix, of type
+             numpy.ndarray(N*(N-1)/2, dtype=float)
+         idx indices of the subset, numpy.ndarray(n, dtype=int)
+
+  Output: compressed distance matrix. numpy.ndarray(n*(n-1)/2, dtype=float)
+
+fcluster
+
+  Generate cluster assignments from a dendrogram. The parameter num_clust
+  specifies the exact number of clusters. (The method in SciPy does not
+  always produce the exact number of clusters, if several heights in the
+  dendrogram are equal, or if singleton clustering is requested.)
+
+  This method starts labeling clusters at 0 while the SciPy indices
+  are 1-based.
+
+  Input: Z          dendrogram
+         num_clust  the number of clusters
