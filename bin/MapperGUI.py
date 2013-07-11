@@ -22,6 +22,7 @@ GUIversion = '0.1.0, dated July 8, 2013'
 import wx
 import os
 import sys
+import traceback
 import numpy as np
 
 # TBD: deferred import
@@ -452,10 +453,11 @@ class MapperWorkerProcess:
                   else:
                       self.InputData = np.loadtxt(File, dtype=np.float)
               except Exception as e:
+                  traceback.print_exc(None, sys.stderr)
                   self.conn.send(('Error', 'Read error: ' + str(e)))
                   self.conn.send(('Data info', None))
                   self.InputPar = None
-                  return
+
         elif self.InputPar[0] == 'Shape':
             Shape, Parameters = self.InputPar[1]
             assert Shape in self.SyntheticShapes
@@ -506,6 +508,7 @@ class MapperWorkerProcess:
                                           PreprocessingMask,
                                           self.PointLabels)
             except Exception as e:
+                traceback.print_exc(None, sys.stderr)
                 self.conn.send(('Error', 'Preprocessing error: {0}'.\
                                 format(repr(e))))
                 self.PreprocessPar = None
@@ -627,6 +630,7 @@ class MapperWorkerProcess:
                     callback=self.Progress,
                     )
             except AssertionError as e:
+                traceback.print_exc(None, sys.stderr)
                 self.conn.send(('Error', e.message))
                 self.MetricPar = None
                 raise JobInterrupt
@@ -839,6 +843,7 @@ class MapperWorkerProcess:
                 self.InputDataPSIT = self.InputDataPSI
                 self.Mask = ldict['mask']
             except Exception as e:
+                traceback.print_exc(None, sys.stderr)
                 self.conn.send(('Error', 'Filter transformation error: {0}'.\
                                 format(repr(e))))
                 self.FilterTrafoPar = None
@@ -917,8 +922,8 @@ class MapperWorkerProcess:
                             'Restart the Mapper process with the '
                             u"‘Interrupt’ button."))
             raise
-            self.MapperPar = None
-            raise JobInterrupt
+            # self.MapperPar = None
+            # raise JobInterrupt
 
     def Script_Mapper(self, **kwargs):
         MapperPar = kwargs['MapperParameters']
@@ -999,8 +1004,8 @@ class MapperWorkerProcess:
                                      u'is: “' + str(e) + u'”.\n\n'
                                      u'(' + str(type(e)) + ')')))
                     raise
-                    self.CutoffPar = None
-                    return False
+                    # self.CutoffPar = None
+                    # return False
             else:
                 raise ValueError('Unknown cutoff strategy.')
             self.MapperOutput.nodes_from_path(self.FilterTransformed)
@@ -1134,7 +1139,7 @@ class FigureFrame(wx.Frame, ResizeableFrame, StatusUpdate):
     def __init__(self, parent, title='', size=(640, 480),
                  axesargs=((0, 0, 1, 1),),
                  axeskwargs={'aspect' : 'equal',
-                             'frameon' : False, },
+                             'frameon' : False },
                  ):
         wx.Frame.__init__(self, parent, title=title, size=size)
         self.Overlay = wx.Overlay()
@@ -1147,7 +1152,7 @@ class FigureFrame(wx.Frame, ResizeableFrame, StatusUpdate):
         from matplotlib.backends.backend_wxagg import FigureCanvasWxAgg
         # NavigationToolbar2WxAgg
 
-        self.figure = Figure(facecolor='w')
+        self.figure = Figure(facecolor='w')  # dpi=
         self.canvas = FigureCanvasWxAgg(parent=self, id=wx.ID_ANY,
                                         figure=self.figure)
         self.axes = self.figure.add_axes(*axesargs, **axeskwargs)
@@ -1577,6 +1582,7 @@ class FigureFrame(wx.Frame, ResizeableFrame, StatusUpdate):
             except Exception as e:
                 msg = 'The figure could not be saved: {0}'.format(e)
                 print msg
+                traceback.print_exc(None, sys.stderr)
                 ErrorDialog(self, msg)
                 self.Parent.PostStatusUpdate(msg.split('\n')[0])
         else:
@@ -3349,7 +3355,7 @@ class GraphLaplacianParPanel(wx.Panel):
 class DissimilarityFilterListCtrl(wx.ListCtrl):
     def __init__(self, parent):
         wx.ListCtrl.__init__(self, parent,
-                             style=wx.LC_REPORT | wx.LC_VRULES | wx.LC_HRULES |
+                             style=wx.LC_REPORT | wx.LC_VRULES | wx.LC_HRULES | 
                              wx.LC_EDIT_LABELS)
         self.InsertColumn(0, 'Parameter')
         self.InsertColumn(1, 'Value')
@@ -4224,8 +4230,8 @@ class MainPanel(wx.Panel, StatusUpdate, MapperJob):
                 elif highlighted_nodes_output_format == "full":
                     pickle.dump(highlighted_nodes, outfile)
                 else:
-                    raise Exception("Unrecognized output format for "
-                                    "highlighted nodes.")
+                    raise ValueError("Unrecognized output format for "
+                                     "highlighted nodes.")
 
     def OnViewData(self, event):
         try:
@@ -4310,6 +4316,7 @@ class DataFrame(wx.Frame, ResizeableFrame):
             except Exception as e:
                 msg = 'The bitmap could not be saved: {0}'.format(e)
                 print msg
+                traceback.print_exc(None, sys.stderr)
                 ErrorDialog(self, msg)
                 self.Parent.PostStatusUpdate(msg.split('\n')[0])
         else:
@@ -4730,7 +4737,8 @@ class ScaleGraphFrame(FigureFrame):
         self.OnLogscale()
 
     def OnToSvgFile(self, event):
-        wildcard = 'Scalable Vector Graphics (*.svg)|*.svg'
+        wildcard = ('Scalable Vector Graphics (*.svg)|*.svg'
+                   '|SVG + TeX (*.svg, *.tex)|*.svg;*.tex') 
         FileDialog = wx.FileDialog(self, 'Mapper output figure',
                                    defaultDir=FigureFrame.LastSaveDir,
                                    style=wx.FD_SAVE | wx.FD_OVERWRITE_PROMPT,
@@ -4744,17 +4752,23 @@ class ScaleGraphFrame(FigureFrame):
 
                 x0, x1 = self.axes.get_xlim()
                 y0, y1 = self.axes.get_ylim()
+                w, h = self.GetClientSize()
+                # dpi = float(self.axes.get_figure().dpi)
+                dpifactor = .5
 
                 from mapper import save_scale_graph_as_svg
                 save_scale_graph_as_svg(self.sgd, path,
+                    width=w * dpifactor, height=h * dpifactor,
                     log_yaxis=self.Logscale.IsChecked(),
                     maxvertices=None,
-                    bbox=(x0, y0, x1, y1))
+                    bbox=(x0, y0, x1, y1),
+                    tex_labels=(FileDialog.GetFilterIndex() == 1))
                 self.Parent.PostStatusUpdate(\
                     "Mapper figure was saved to {0}.".format(path))
             except Exception as e:
                 msg = 'The figure could not be saved: {0}'.format(e)
-                print msg
+                print(msg)
+                traceback.print_exc(None, sys.stderr)
                 ErrorDialog(self, msg)
                 self.Parent.PostStatusUpdate(msg.split('\n')[0])
         else:
@@ -4896,7 +4910,7 @@ class MainFrame(wx.Frame, StatusUpdate):
             if rslt is True:
                 msg = 'Loaded configuration from {0}.'.format(path)
             else:
-                ErrorDialog(self, 'Could not load configuration file: ' +
+                ErrorDialog(self, 'Could not load configuration file: ' + 
                             str(rslt))
                 msg = 'Could not load configuration from {0}.'.format(path)
             print(msg)
@@ -4925,6 +4939,7 @@ class MainFrame(wx.Frame, StatusUpdate):
                 self.PostStatusUpdate('Saved configuration to {0}.'.
                                       format(path))
             except IOError as e:
+                traceback.print_exc(None, sys.stderr)
                 ErrorDialog(self, str(e))
                 self.PostStatusUpdate('Could not save configuration to {0}.'.
                                       format(path))
@@ -4971,6 +4986,8 @@ class MainFrame(wx.Frame, StatusUpdate):
                   '{0}\n'
                   '-----------------------------------------------------'.\
                       format(str(e)))
+            traceback.print_exc(None, sys.stderr)
+
 
     def LoadConfig(self, event=None, path='gui_config.json'):
         try:
@@ -4980,6 +4997,7 @@ class MainFrame(wx.Frame, StatusUpdate):
             self.Panel.SetValues(Config)
             return True
         except (KeyError, TypeError) as e:
+            traceback.print_exc(None, sys.stderr)
             self.SetStatusText('Incomplete configuration due to error.')
             ErrorDialog(self, u"The configuration file ‘gui_config.json’ "
                         "could not be processed completely. If the Mapper GUI "
@@ -4990,6 +5008,7 @@ class MainFrame(wx.Frame, StatusUpdate):
             return e
         # except (IOError, ValueError) as e:
         except Exception as e:
+            traceback.print_exc(None, sys.stderr)
             self.SetStatusText('Default configuration.')
             return e
 
@@ -4999,7 +5018,7 @@ class MainFrame(wx.Frame, StatusUpdate):
 class MapperGUI(wx.App):
     '''Main application'''
     def OnInit(self):
-        # sys.excepthook = self._excepthook
+        sys.excepthook = self._excepthook
         self.GUIMainFrame = MainFrame(None, title='Python Mapper',
             style=wx.DEFAULT_FRAME_STYLE & (~wx.MAXIMIZE_BOX))
 

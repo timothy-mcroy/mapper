@@ -25,6 +25,7 @@ except ImportError:
     print("Warning: The module matplotlib.patheffects cannot be imported.")
     patheffects_available = False
 import sys
+import os
 import re
 from math import ceil, floor, log
 from operator import getitem
@@ -850,24 +851,46 @@ def find_good_stepsize_for_axis_ticks(yrange):
 def find_good_basis_for_axis_ticks(y, dy):
     return ceil(y / dy) * dy
 
+class DummyFile:
+    def __enter__(self):
+        return self
+    
+    def __exit__(self, type, value, traceback):
+        print type
+        print value
+        print traceback
+        pass
+    
 def save_scale_graph_as_svg(sgd, filename, log_yaxis=False, maxvertices=None,
-                     infinite_edges=None, verbose=True, bbox=[None, None, None, None]):
+                            width=None, height=None,
+                            infinite_edges=None, verbose=True, bbox=[None, None, None, None],
+                            tex_labels=False):
     '''
     infinite_edges: True: draw edges with infinite weight
                     False: don't draw
                     None: auto mode, depends on whether the path
                           has infinite weight edges
     '''
-    # todo log axis
-    if not filename.endswith('.svg'):
-        filename += '.svg'
-    Width = 201.968503113
-    Height = Width * .75
+    if filename.endswith('.svg') or (tex_labels and filename.endswith('.tex')):
+        filename_no_ending = filename[:-4]
+    else:
+        filename_no_ending = filename
+
+    if width is None:
+        Width = 200
+    else:
+        Width = width
+    if height is None:
+        Height = Width * .75
+    else:
+        Height = height
     Linewidth = .4
-    Tickwidth = 1
-    Fontsize = 5
+    Tickwidth = 1 # todo adjust tickwidth
+    Fontsize = max(Width/40.0, 12)
     Bottomlabeloffset = Fontsize
-    Bottomoffset = Bottomlabeloffset
+    Bottomoffset = .5 * Linewidth
+    if not tex_labels:
+        Bottomoffset += Bottomlabeloffset
     Topoffset = .5 * Linewidth
     # Font = mpl.rcParams['font.sans-serif'][0]
     Font = 'LMRoman5'
@@ -916,7 +939,9 @@ def save_scale_graph_as_svg(sgd, filename, log_yaxis=False, maxvertices=None,
             maxchars = max(maxchars, len(Teststring + "{:.2g}".format(y)))
 
     # Factor .64 depends on the font
-    Leftoffset = (.64 * maxchars) * Fontsize
+    Leftoffset = .5 * Linewidth
+    if not tex_labels:
+        Leftoffset += (.64 * maxchars) * Fontsize
     Rightoffset = .5 * Linewidth
 
     if maxvertices is None:
@@ -941,265 +966,291 @@ def save_scale_graph_as_svg(sgd, filename, log_yaxis=False, maxvertices=None,
                                 if Z is not None]) + pathlength
     else:
         maxnumvertices = pathlength * maxvertices
-
-    with open(filename, 'w') as f:
-        f.write('<?xml version="1.0" encoding="utf-8" standalone="no"?>\n'
-                '<!DOCTYPE svg PUBLIC "-//W3C//DTD SVG 1.1//EN" "http://www.w3.org/Graphics/SVG/1.1/DTD/svg11.dtd">\n'
-                '<!-- Created with Python Mapper (http://www.danifold.net/mapper) -->\n'
-                '<svg version="1.1" viewBox="0 0 {0} {1}" width="{0}pt" height="{1}pt" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink">\n'
-                '<g fill="none" stroke-width="{2}" stroke-linecap="butt">\n'.
-                    format(Width, Height, Linewidth))
         
-        f.write('<defs>\n')
-        f.write('<rect id="r" x="{:.2f}" y="{:.2f}" width="{:.2f}" height="{:.2f}" stroke="black" />\n'.
-                    format(min(xtransform(bbox[0]), xtransform(bbox[2])),
-                           min(ytransform(bbox[1]), ytransform(bbox[3])),
-                           abs(xtransform(bbox[0]) - xtransform(bbox[2])),
-                           abs(ytransform(bbox[1]) - ytransform(bbox[3]))))
-        f.write('</defs>\n')
-        f.write('<clipPath id="c">\n')
-        f.write('<use xlink:href="#r"/>\n')
-        f.write('</clipPath>\n')
-        
-        xrange = min(pathlength - 1, bbox[2]) - max(0, bbox[0])
-        if xrange > 25:
-            dx = 5
-        elif xrange > 15:
-            dx = 2
+    with open(filename_no_ending + '.svg', 'w') as f:
+        if tex_labels:
+            texfile = open(filename_no_ending + '.tex', 'w')
         else:
-            dx = 1
+            texfile = DummyFile()
+        with texfile as t:
+            if tex_labels:
+                t.write('{\\def\\xlabel#1#2{\\rlap{\\hskip#1bp\\hbox to0pt{\\hss$#2$\\hss}}}%\n'
+                        '\\def\\ylabel#1#2{\\vbox to 0pt{\\vss\\hbox{$#2$\\,}\\vskip-\\prevdepth\\vskip-\\fontdimen22\\textfont2\\vskip#1bp}}%\n'
+                        '\\setbox0\\vbox{\\lineskip0pt\\baselineskip0pt\n')
 
-        f.write('<g font-family="{}" font-size="{}" fill="black">\n'.format(Font, Fontsize))
-        f.write('<g text-anchor="middle">\n'.format(Fontsize))
-        for x in range(max(0, int(ceil(bbox[0]))), min(pathlength - 1, int(floor(bbox[2]))), dx):
-            f.write('<text x="{:.2f}" y="{:.2f}">{}</text>\n'.
-            format(xtransform(x), Height - Bottomoffset + Bottomlabeloffset, x))
-        f.write('</g>\n')
-
-        if log_yaxis:
-            for e in range(e0, e1+1):
-                y = 10**e;
-                if y<=bbox[1] or y>=bbox[3]: continue
-                f.write('<text x="{:.2f}" y="{:.2f}">{}1e{}</text>\n'.
-                        format(0, ytransform(y) + .37 * Fontsize, Teststring, e))
-        else:
-            for y in np.arange(sy, bbox[3], dy):
-                if y == 0:
-                    y = 0
-                f.write('<text x="{:.2f}" y="{:.2f}">{}{:.2g}</text>\n'.
-                format(0, ytransform(y) + .37 * Fontsize, Teststring, y))
-
-        f.write('</g>\n')
-
-        f.write('<g clip-path="url(#c)">\n'.format(Linewidth))
-        
-        f.write('<path stroke="black" d="')
-        for x in range(max(0, int(ceil(bbox[0]))), min(pathlength - 1, int(floor(bbox[2]))), dx):
-            f.write('M{:.2f} {:.2f}V{:.2f}'.format(xtransform(x), ytransform(bbox[1]), ytransform(bbox[1]) - 2 * Tickwidth))
-            f.write('M{:.2f} {:.2f}V{:.2f}'.format(xtransform(x), ytransform(bbox[3]), ytransform(bbox[3]) + 2 * Tickwidth))
-        f.write('"/>\n')
-
-        f.write('<path stroke="black" d="')
-
-        if log_yaxis:
-            for e in range(e0, e1+1):
-                for i in range(1,10):
-                    y = i*10**e;
-                    if y<=bbox[1] or y>=bbox[3]: continue
-                    f.write('M{:.2f} {:.2f}H{:.2f}'.format(xtransform(bbox[0]), ytransform(y), xtransform(bbox[0]) + (1+(i==1)) * Tickwidth))
-                    f.write('M{:.2f} {:.2f}H{:.2f}'.format(xtransform(bbox[2]), ytransform(y), xtransform(bbox[2]) - (1+(i==1)) * Tickwidth))
-        else:
-            for y in np.arange(sy, bbox[3], dy):
-                f.write('M{:.2f} {:.2f}H{:.2f}'.format(xtransform(bbox[0]), ytransform(y), xtransform(bbox[0]) + 2 * Tickwidth))
-                f.write('M{:.2f} {:.2f}H{:.2f}'.format(xtransform(bbox[2]), ytransform(y), xtransform(bbox[2]) - 2 * Tickwidth))
-        f.write('"/>\n')
-
-        # Draw the light blue boxes for the intervals in the scale path
-        f.write('<g fill="blue" fill-opacity=".1">\n')
-        for a, b, c, d in _path_bars(sgd):
-            assert a[1] == b[1]
-            assert b[0] == c[0]
-            assert c[1] == d[1]
-            assert d[0] == a[0]
+            f.write('<?xml version="1.0" encoding="utf-8" standalone="no"?>\n'
+                    '<!DOCTYPE svg PUBLIC "-//W3C//DTD SVG 1.1//EN" "http://www.w3.org/Graphics/SVG/1.1/DTD/svg11.dtd">\n'
+                    '<!-- Created with Python Mapper (http://www.danifold.net/mapper) -->\n'
+                    '<svg version="1.1" viewBox="0 0 {0} {1}" width="{0}pt" height="{1}pt" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink">\n'
+                    '<g fill="none" stroke-width="{2}" stroke-linecap="butt">\n'.
+                        format(Width, Height, Linewidth))
             
-            x0 = xtransform(max(a[0], bbox[0]))
-            y0 = ytransform(min(b[1], bbox[3]))
-            x1 = xtransform(min(b[0], bbox[2]))
-            y1 = ytransform(max(c[1], bbox[1]))
-            if x0 >= x1 or y0 >= y1: continue
+            f.write('<defs>\n')
+            f.write('<rect id="r" x="{:.2f}" y="{:.2f}" width="{:.2f}" height="{:.2f}" stroke="black" />\n'.
+                        format(min(xtransform(bbox[0]), xtransform(bbox[2])),
+                               min(ytransform(bbox[1]), ytransform(bbox[3])),
+                               abs(xtransform(bbox[0]) - xtransform(bbox[2])),
+                               abs(ytransform(bbox[1]) - ytransform(bbox[3]))))
+            f.write('</defs>\n')
+            f.write('<clipPath id="c">\n')
+            f.write('<use xlink:href="#r"/>\n')
+            f.write('</clipPath>\n')
             
-            f.write('<rect x="{:.2f}" y="{:.2f}" width="{:.2f}" height="{:.2f}"/>\n'.
-                    format(x0, y0, x1 - x0, y1 - y0))
-        f.write('</g>\n')
-
-        # Draw the nodes and the bars for the dendrograms
-        if verbose:
-            print('Draw nodes and dendrograms.')
-        node_y = []
-        heights_ext = []
-        vertlines = np.empty((pathlength, 2, 2))
-        marker_x = np.empty(maxnumvertices + pathlength)
-        marker_y = np.empty_like(marker_x)
-        marker_i = 0
-        dot_x = np.empty(maxnumvertices)
-        dot_y = np.empty_like(dot_x)
-        dot_i = 0
-        zerodot_y = np.empty(pathlength)
-        graylines = np.empty((pathlength, 2, 2))
-        graylines_i = 0
-        for i, dendrogram, diameter in zip(count(), sgd.dendrogram,
-                                           sgd.diameter):
-            if diameter is None:
-                heights_ext.append(None)
-                vertlines[i] = (i, 0.)
-                ny = np.array([zero_vertex_offset])
+            xrange = min(pathlength - 1, bbox[2]) - max(0, bbox[0])
+            if xrange > 25:
+                dx = 5
+            elif xrange > 15:
+                dx = 2
             else:
-                y = np.hstack((diameter, dendrogram[::-1, 2], 0))
-                heights_ext.append(y)
-                vy = .5 * (y[1:] + y[:-1])
-                if maxvertices is None:
-                    y_m = y
-                    vy_m = vy
+                dx = 1
+    
+            f.write('<g font-family="{}" font-size="{}" fill="black">\n'.format(Font, Fontsize))
+    
+            if log_yaxis:
+                for e in range(e0, e1 + 1):
+                    y = 10 ** e;
+                    if y <= bbox[1] or y >= bbox[3]: continue
+                    if tex_labels:
+                        t.write('\\ylabel{{{:.2f}}}{{10^{{{}}}}}'.format(Height - ytransform(y), e))
+                    else:
+                        f.write('<text x="{:.2f}" y="{:.2f}">{}1e{}</text>\n'.
+                                format(0, ytransform(y) + .37 * Fontsize, Teststring, e))
+            else:
+                for y in np.arange(sy, bbox[3], dy):
+                    if y == 0:
+                        y = 0
+                    if tex_labels:
+                        t.write('\\ylabel{{{:.2f}}}{{{:.2g}}}\n'.format(Height - ytransform(y), y))
+                    else:
+                        f.write('<text x="{:.2f}" y="{:.2f}">{}{:.2g}</text>\n'.
+                                format(0, ytransform(y) + .37 * Fontsize, Teststring, y))
+                    
+            if tex_labels:
+                t.write('}}%\n'
+                        '\\vbox{{\\lineskip.25\\baselineskip\\lineskiplimit\\lineskip\\baselineskip0pt\n'
+                        '\\hbox{{\\copy0\\includegraphics{{{}.pdf}}}}\n'
+                        '\\hbox{{\\hskip\\wd0\\hbox{{%\n'.format(filename_no_ending))
+                for x in range(max(0, int(ceil(bbox[0]))), min(pathlength - 1, int(floor(bbox[2]))), dx):
+                    t.write('\\xlabel{{{:.2f}}}{{{}}}%\n'.format(xtransform(x), x))
+                t.write('}}}}%\n')
+            else:  
+                f.write('<g text-anchor="middle">\n'.format(Fontsize))
+                for x in range(max(0, int(ceil(bbox[0]))), min(pathlength - 1, int(floor(bbox[2]))), dx):
+                    f.write('<text x="{:.2f}" y="{:.2f}">{}</text>\n'.
+                    format(xtransform(x), Height - Bottomoffset + Bottomlabeloffset, x))
+                f.write('</g>\n')
+                    
+            f.write('</g>\n')
+    
+            f.write('<g clip-path="url(#c)">\n'.format(Linewidth))
+            
+            f.write('<path stroke="black" d="')
+            for x in range(max(0, int(ceil(bbox[0]))), min(pathlength - 1, int(floor(bbox[2]))), dx):
+                f.write('M{:.2f} {:.2f}V{:.2f}'.format(xtransform(x), ytransform(bbox[1]), ytransform(bbox[1]) - 2 * Tickwidth))
+                f.write('M{:.2f} {:.2f}V{:.2f}'.format(xtransform(x), ytransform(bbox[3]), ytransform(bbox[3]) + 2 * Tickwidth))
+            f.write('"/>\n')
+    
+            f.write('<path stroke="black" d="')
+    
+            if log_yaxis:
+                for e in range(e0, e1 + 1):
+                    for i in range(1, 10):
+                        y = i * 10 ** e;
+                        if y <= bbox[1] or y >= bbox[3]: continue
+                        f.write('M{:.2f} {:.2f}H{:.2f}'.format(xtransform(bbox[0]), ytransform(y), xtransform(bbox[0]) + (1 + (i == 1)) * Tickwidth))
+                        f.write('M{:.2f} {:.2f}H{:.2f}'.format(xtransform(bbox[2]), ytransform(y), xtransform(bbox[2]) - (1 + (i == 1)) * Tickwidth))
+            else:
+                for y in np.arange(sy, bbox[3], dy):
+                    f.write('M{:.2f} {:.2f}H{:.2f}'.format(xtransform(bbox[0]), ytransform(y), xtransform(bbox[0]) + 2 * Tickwidth))
+                    f.write('M{:.2f} {:.2f}H{:.2f}'.format(xtransform(bbox[2]), ytransform(y), xtransform(bbox[2]) - 2 * Tickwidth))
+            f.write('"/>\n')
+    
+            # Draw the light blue boxes for the intervals in the scale path
+            f.write('<g fill="blue" fill-opacity=".1">\n')
+            for a, b, c, d in _path_bars(sgd):
+                assert a[1] == b[1]
+                assert b[0] == c[0]
+                assert c[1] == d[1]
+                assert d[0] == a[0]
+                
+                x0 = xtransform(max(a[0], bbox[0]))
+                y0 = ytransform(min(b[1], bbox[3]))
+                x1 = xtransform(min(b[0], bbox[2]))
+                y1 = ytransform(max(c[1], bbox[1]))
+                if x0 >= x1 or y0 >= y1: continue
+                
+                f.write('<rect x="{:.2f}" y="{:.2f}" width="{:.2f}" height="{:.2f}"/>\n'.
+                        format(x0, y0, x1 - x0, y1 - y0))
+            f.write('</g>\n')
+    
+            # Draw the nodes and the bars for the dendrograms
+            if verbose:
+                print('Draw nodes and dendrograms.')
+            node_y = []
+            heights_ext = []
+            vertlines = np.empty((pathlength, 2, 2))
+            marker_x = np.empty(maxnumvertices + pathlength)
+            marker_y = np.empty_like(marker_x)
+            marker_i = 0
+            dot_x = np.empty(maxnumvertices)
+            dot_y = np.empty_like(dot_x)
+            dot_i = 0
+            zerodot_y = np.empty(pathlength)
+            graylines = np.empty((pathlength, 2, 2))
+            graylines_i = 0
+            for i, dendrogram, diameter in zip(count(), sgd.dendrogram,
+                                               sgd.diameter):
+                if diameter is None:
+                    heights_ext.append(None)
+                    vertlines[i] = (i, 0.)
+                    ny = np.array([zero_vertex_offset])
                 else:
-                    y_m = y[:maxvertices + 1]
-                    vy_m = vy[:maxvertices]
-                    if y_m[-1] > 0:
-                        graylines[graylines_i] = ((i, 0.), (i, y_m[-1]))
-                        graylines_i += 1
-                vertlines[i] = ((i, y_m[0]), (i, y_m[-1]))
-                marker_x[marker_i:marker_i + len(y_m)].fill(i)
-                marker_y[marker_i:marker_i + len(y_m)] = y_m
-                marker_i += len(y_m)
-                dot_x[dot_i:dot_i + len(vy_m)].fill(i)
-                dot_y[dot_i:dot_i + len(vy_m)] = vy_m
-                dot_i += len(vy_m)
-                ny = np.hstack((diameter + zero_vertex_offset, vy))
-            node_y.append(ny)
-            zerodot_y[i] = ny[0]
+                    y = np.hstack((diameter, dendrogram[::-1, 2], 0))
+                    heights_ext.append(y)
+                    vy = .5 * (y[1:] + y[:-1])
+                    if maxvertices is None:
+                        y_m = y
+                        vy_m = vy
+                    else:
+                        y_m = y[:maxvertices + 1]
+                        vy_m = vy[:maxvertices]
+                        if y_m[-1] > 0:
+                            graylines[graylines_i] = ((i, 0.), (i, y_m[-1]))
+                            graylines_i += 1
+                    vertlines[i] = ((i, y_m[0]), (i, y_m[-1]))
+                    marker_x[marker_i:marker_i + len(y_m)].fill(i)
+                    marker_y[marker_i:marker_i + len(y_m)] = y_m
+                    marker_i += len(y_m)
+                    dot_x[dot_i:dot_i + len(vy_m)].fill(i)
+                    dot_y[dot_i:dot_i + len(vy_m)] = vy_m
+                    dot_i += len(vy_m)
+                    ny = np.hstack((diameter + zero_vertex_offset, vy))
+                node_y.append(ny)
+                zerodot_y[i] = ny[0]
+    
+            # Broad stems for the part of the dendrograms that is neglected (ie. below "maxvertices")
+            f.write('<path stroke="#303030" stroke-width="{}" d="'.format(2 * Tickwidth))
+            for a, b in graylines:
+                # assert np.isclose(a[0],b[0]), (a[0], b[0]) 
+                # assert np.isclose(a[1], 0)
 
-        # Broad stems for the part of the dendrograms that is neglected (ie. below "maxvertices")
-        f.write('<path stroke="#303030" stroke-width="{}" d="'.format(2 * Tickwidth))
-        for a, b in graylines:
-            assert a[0] == b[0]
-            assert a[1] == 0
-            
-            if xtransform(a[0]) + Tickwidth <= xtransform(bbox[0]) \
-                or xtransform(a[0]) - Tickwidth >= xtransform(bbox[2]):
-                continue
-            
-            y0 = ytransform(max(0, bbox[1])) 
-            y1 = ytransform(min(b[1], bbox[3]))
-            if y0 <= y1: continue
-             
-            f.write('M{:.2f} {:.2f}V{:.2f}'.format(xtransform(a[0]), y0, y1))
-            
-        f.write('"/>\n')
-
-        # Vertical stems for the dendrograms
-        f.write('<path stroke="black" d="')
-        for a, b in vertlines:
-            assert a[0] == b[0]
-
-            if a[0] <= bbox[0] or a[0] >= bbox[2] : continue
-
-            y0 = ytransform(max(b[1], bbox[1])) 
-            y1 = ytransform(min(a[1], bbox[3]))
-            if y0 <= y1: continue
-            
-            f.write('M{:.2f} {:.2f}V{:.2f}'.format(xtransform(a[0]), y0, y1))
-        f.write('"/>\n')
-
-        # Horizontal tickmarks at interval boundaries
-        f.write('<path stroke="black" d="')
-        for a, b in zip(marker_x[:marker_i], marker_y[:marker_i]):
-
-            if xtransform(a) + Tickwidth <= xtransform(bbox[0]) or xtransform(a) - Tickwidth >= xtransform(bbox[2]) : continue
-            if b <= bbox[1] or b >= bbox[3]: continue
-            
-            f.write('M{:.2f} {:.2f}H{:.2f}'.format(max(xtransform(a) - Tickwidth, xtransform(bbox[0])),
-                                                   ytransform(b),
-                                                     min(xtransform(a) + Tickwidth, xtransform(bbox[2]))))
-        f.write('"/>\n')
-
-        # Draw dots for the graph nodes 
-        f.write('<g fill="red">\n')
-        for x, y in zip(dot_x[:dot_i], dot_y[:dot_i]):
-            
-            if xtransform(x) + Tickwidth <= xtransform(bbox[0]) or xtransform(x) - Tickwidth >= xtransform(bbox[2]) : continue
-            if ytransform(y) + Tickwidth <= ytransform(bbox[3]) or ytransform(y) - Tickwidth >= ytransform(bbox[1]) : continue
-            
-            f.write('<circle cx="{:.2f}" cy="{:.2f}" r="{}"/>\n'.
-                    format(xtransform(x), ytransform(y), Tickwidth))
-        f.write('</g>\n')
-
-        if infinite_edges and sgd.edges:
-            f.write('<g fill="#0050FF">\n')
-            for x, y in enumerate(zerodot_y):
-
+                if xtransform(a[0]) + Tickwidth <= xtransform(bbox[0]) \
+                    or xtransform(a[0]) - Tickwidth >= xtransform(bbox[2]):
+                    continue
+                
+                y0 = ytransform(max(0, bbox[1])) 
+                y1 = ytransform(min(b[1], bbox[3]))
+                if y0 <= y1: continue
+                 
+                f.write('M{:.2f} {:.2f}V{:.2f}'.format(xtransform(a[0]), y0, y1))
+                
+            f.write('"/>\n')
+    
+            # Vertical stems for the dendrograms
+            f.write('<path stroke="black" d="')
+            for a, b in vertlines:
+                assert a[0] == b[0]
+    
+                if a[0] <= bbox[0] or a[0] >= bbox[2] : continue
+    
+                y0 = ytransform(max(b[1], bbox[1])) 
+                y1 = ytransform(min(a[1], bbox[3]))
+                if y0 <= y1: continue
+                
+                f.write('M{:.2f} {:.2f}V{:.2f}'.format(xtransform(a[0]), y0, y1))
+            f.write('"/>\n')
+    
+            # Horizontal tickmarks at interval boundaries
+            f.write('<path stroke="black" d="')
+            for a, b in zip(marker_x[:marker_i], marker_y[:marker_i]):
+    
+                if xtransform(a) + Tickwidth <= xtransform(bbox[0]) or xtransform(a) - Tickwidth >= xtransform(bbox[2]) : continue
+                if b <= bbox[1] or b >= bbox[3]: continue
+                
+                f.write('M{:.2f} {:.2f}H{:.2f}'.format(max(xtransform(a) - Tickwidth, xtransform(bbox[0])),
+                                                       ytransform(b),
+                                                         min(xtransform(a) + Tickwidth, xtransform(bbox[2]))))
+            f.write('"/>\n')
+    
+            # Draw dots for the graph nodes 
+            f.write('<g fill="red">\n')
+            for x, y in zip(dot_x[:dot_i], dot_y[:dot_i]):
+                
                 if xtransform(x) + Tickwidth <= xtransform(bbox[0]) or xtransform(x) - Tickwidth >= xtransform(bbox[2]) : continue
                 if ytransform(y) + Tickwidth <= ytransform(bbox[3]) or ytransform(y) - Tickwidth >= ytransform(bbox[1]) : continue
-
+                
                 f.write('<circle cx="{:.2f}" cy="{:.2f}" r="{}"/>\n'.
                         format(xtransform(x), ytransform(y), Tickwidth))
             f.write('</g>\n')
-
-        # Draw the edges
-        if verbose and sgd.edges:
-            print('Fill edge array.')
-
-        NE = sum(map(len, sgd.edges))
-        L = np.empty((NE, 2, 2))
-        C = np.empty(NE, bool)
-        j = 0
-        for i, E in enumerate(sgd.edges):
-            EE = np.array(E)  # columns: source, target, infinite
-            n = np.alen(EE)
-            y1 = node_y[i]
-            y2 = node_y[i + 1]
-            L[j:j + n, :, 0] = (i, i + 1)
-            L[j:j + n, 0, 1] = y1[EE[:, 0]]
-            L[j:j + n, 1, 1] = y2[EE[:, 1]]
-            C[j:j + n] = EE[:, 2]
-            j += n
-
-        if len(L):
-            L1 = L[:j][C[:j]]
-            L2 = L[:j][np.logical_not(C[:j])]
-
-            f.write('<path stroke="black" stroke-width="{}" d="'.
-                    format(.2 * Linewidth))
-            for (x0, y0), (x1, y1) in L2:
-                
-                if x1 <= bbox[0] or x0 >= bbox[2] or min(y0, y1) <= bbox[1] or max(y0, y1) >= bbox[3]: continue
-                
-                f.write('M{:.2f} {:.2f}L{:.2f} {:.2f}'.format(xtransform(x0), ytransform(y0), xtransform(x1), ytransform(y1)))
-            f.write('"/>\n')
-
-            if infinite_edges and len(L1):
-                f.write('<path stroke="red" stroke-width="{}" d="'.
+    
+            if infinite_edges and sgd.edges:
+                f.write('<g fill="#0050FF">\n')
+                for x, y in enumerate(zerodot_y):
+    
+                    if xtransform(x) + Tickwidth <= xtransform(bbox[0]) or xtransform(x) - Tickwidth >= xtransform(bbox[2]) : continue
+                    if ytransform(y) + Tickwidth <= ytransform(bbox[3]) or ytransform(y) - Tickwidth >= ytransform(bbox[1]) : continue
+    
+                    f.write('<circle cx="{:.2f}" cy="{:.2f}" r="{}"/>\n'.
+                            format(xtransform(x), ytransform(y), Tickwidth))
+                f.write('</g>\n')
+    
+            # Draw the edges
+            if verbose and sgd.edges:
+                print('Fill edge array.')
+    
+            NE = sum(map(len, sgd.edges))
+            L = np.empty((NE, 2, 2))
+            C = np.empty(NE, bool)
+            j = 0
+            for i, E in enumerate(sgd.edges):
+                EE = np.array(E)  # columns: source, target, infinite
+                n = np.alen(EE)
+                y1 = node_y[i]
+                y2 = node_y[i + 1]
+                L[j:j + n, :, 0] = (i, i + 1)
+                L[j:j + n, 0, 1] = y1[EE[:, 0]]
+                L[j:j + n, 1, 1] = y2[EE[:, 1]]
+                C[j:j + n] = EE[:, 2]
+                j += n
+    
+            if len(L):
+                L1 = L[:j][C[:j]]
+                L2 = L[:j][np.logical_not(C[:j])]
+    
+                f.write('<path stroke="black" stroke-width="{}" shape-rendering="geometricPrecision" d="'.
                         format(.2 * Linewidth))
                 for (x0, y0), (x1, y1) in L2:
-
+                    
                     if x1 <= bbox[0] or x0 >= bbox[2] or min(y0, y1) <= bbox[1] or max(y0, y1) >= bbox[3]: continue
-
+                    
                     f.write('M{:.2f} {:.2f}L{:.2f} {:.2f}'.format(xtransform(x0), ytransform(y0), xtransform(x1), ytransform(y1)))
                 f.write('"/>\n')
-
-        # Draw the green path with minimal vertical displacement 
-        SP = shortest_scale_path(sgd)
-        f.write('<path stroke="#00C000" stroke-width="{}" d="'.
-                format(2 * Linewidth))
-        letter = 'M'
-        for x, y in zip(count(0, .5), SP):
-            if x + .5 <= bbox[0] or x - .5 >= bbox[2]: continue
-            f.write('{}{:.2f} {:.2f}'.format(letter, xtransform(x), ytransform(y)))
-            letter = 'L'
-        f.write('"/>\n')
-
-        f.write('</g>\n'
-                '<use xlink:href="#r"/>\n'
-                '</g>\n'
-                '</svg>\n')
+    
+                if infinite_edges and len(L1):
+                    f.write('<path stroke="red" stroke-width="{}" d="'.
+                            format(.2 * Linewidth))
+                    for (x0, y0), (x1, y1) in L2:
+    
+                        if x1 <= bbox[0] or x0 >= bbox[2] or min(y0, y1) <= bbox[1] or max(y0, y1) >= bbox[3]: continue
+    
+                        f.write('M{:.2f} {:.2f}L{:.2f} {:.2f}'.format(xtransform(x0), ytransform(y0), xtransform(x1), ytransform(y1)))
+                    f.write('"/>\n')
+    
+            # Draw the green path with minimal vertical displacement 
+            SP = shortest_scale_path(sgd)
+            f.write('<path stroke="#00C000" stroke-width="{}" d="'.
+                    format(2 * Linewidth))
+            letter = 'M'
+            for x, y in zip(count(0, .5), SP):
+                if x + .5 <= bbox[0] or x - .5 >= bbox[2]: continue
+                f.write('{}{:.2f} {:.2f}'.format(letter, xtransform(x), ytransform(y)))
+                letter = 'L'
+            f.write('"/>\n')
+    
+            f.write('</g>\n'
+                    '<use xlink:href="#r"/>\n'
+                    '</g>\n'
+                    '</svg>\n')
 
         # Return the bounding box (plus None for no node size).
         # return (xlim[0], ylim[0], xlim[1], ylim[1], None)

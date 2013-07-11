@@ -20,7 +20,7 @@ References
 
 The Mapper algorithm was invented by Gurjeet Singh, Facundo Mémoli and Gunnar Carlsson. It is presented in the paper [R1]_.
 
-The point clouds in the ``exampleshapes`` directory were converted from mesh data which was published by Robert W. Sumner and Jovan Popović at http://people.csail.mit.edu/sumner/research/deftransfer/data.html. The mesh data was originally published along with the paper [R5]_.
+The point clouds in the ``exampleshapes`` directory were converted from mesh data which was published by Robert W. Sumner and Jovan Popović [R6]_. The mesh data was originally published along with the paper [R5]_.
 
 Citation info
 -------------
@@ -46,3 +46,5 @@ To cite the scale graph algorithm:
 .. |TopoData| replace:: *Topology and Data*
 
 .. [R5] Robert W. Sumner and Jovan Popović, *Deformation Transfer for Triangle Meshes*, ACM Transactions on Graphics (TOG) – Proceedings of ACM SIGGRAPH 2004, **23** (2004), no. 3, pp. 399–405, DOI `10.1145/1015706.1015736 <http://dx.doi.org/10.1145/1015706.1015736>`_.
+
+.. [R6] Robert W. Sumner, personal web page: http://people.csail.mit.edu/sumner/research/deftransfer/data.html
