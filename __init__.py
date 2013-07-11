@@ -13,7 +13,8 @@ Python Mapper is distributed under the GPLv3 license. See the project home page
 
 for more information.
 '''
-__version__ = '0.1.0'
+__version__ = '0.1.1'
+__date__ = 'July 10, 2013'
 
 import sys
 if sys.hexversion < 0x02060000:

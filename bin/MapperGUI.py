@@ -4862,10 +4862,11 @@ class MainFrame(wx.Frame, StatusUpdate):
         self.Panel.MapperButton.SetFocus()
 
     def OnAbout(self, event):
+        from mapper import __version__, __date__
         wx.MessageBox('GUI for Python Mapper\n\n'
                       'Copyright Daniel Müllner and '
                       'Aravindakshan Babu, 2012\n\n'
-                      'Version ' + GUIversion,
+                      'Version {}, dated {}'.format(__version__, __date__),
                       'About',
                       wx.OK | wx.ICON_INFORMATION)
 
