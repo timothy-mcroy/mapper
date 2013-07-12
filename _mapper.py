@@ -217,6 +217,7 @@ def mapper(pcd, filt, cover, cutoff,
            point_labels=None,
            metricpar={},
            simple=False,
+           filter_info=None,
            verbose=True):
     '''
     Mapper algorithm
@@ -283,9 +284,9 @@ def mapper(pcd, filt, cover, cutoff,
         for i in range(filt.shape[1]):
             print('Mapper: Filter range in dimension {0}: [{1:0.2f}, '
                   '{2:0.2f}]'.format(i, np.min(filt[:,i]), np.max(filt[:,i])))
-            print('Mapper: Cover: {0}'.format(cover))
-            print('Mapper: Clustering: {0}'.format(cluster))
-            print('Mapper: Cutoff: {0}'.format(cutoff))
+        print('Mapper: Cover: {0}'.format(cover))
+        print('Mapper: Clustering: {0}'.format(cluster))
+        print('Mapper: Cutoff: {0}'.format(cutoff))
 
     # Mapper main loop
     patches = cover(filt, mask)
@@ -311,6 +312,8 @@ def mapper(pcd, filt, cover, cutoff,
 
     # Add info
     filt_mask = filt if mask is None else filt[mask]
+    if filter_info is not None:
+        M.add_info(filter_info=filter_info)
     M.add_info(filter_min=np.min(filt_mask[:,0]),
                filter_max=np.max(filt_mask[:,0]))
     M.add_info(filter_min_array=np.min(filt_mask, axis=0),

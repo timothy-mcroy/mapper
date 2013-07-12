@@ -312,6 +312,9 @@ def draw_2D(M, ax=None, node_labels=None, node_colors=None, legend=True, verbose
     # This is subject to change!
     if legend:
         legend = []
+        if 'filter_info' in info:
+            legend.append('Filter function: {}' \
+                              .format(info['filter_info']))
         if 'filter_min' in info:
             legend.append('Filter range: [{0:.2f}, {1:.2f}]' \
                               .format(info['filter_min'], info['filter_max']))
@@ -828,7 +831,7 @@ def draw_scale_graph(sgd, ax=None, log=False, maxvertices=None,
 def find_good_stepsize_for_axis_ticks(yrange):
 
     m, e = re.search("([0-9.]*)e(.*)", "{:e}".format(yrange)).group(1, 2)
-    m = float(m) * .1
+    m = float(m) * .2
     e = int(e) + 1
     mult = 1
     while m < 10:
@@ -1160,18 +1163,6 @@ def save_scale_graph_as_svg(sgd, filename, log_yaxis=False, maxvertices=None,
                 f.write('M{:.2f} {:.2f}V{:.2f}'.format(xtransform(a[0]), y0, y1))
             f.write('"/>\n')
     
-            # Horizontal tickmarks at interval boundaries
-            f.write('<path stroke="black" d="')
-            for a, b in zip(marker_x[:marker_i], marker_y[:marker_i]):
-    
-                if xtransform(a) + Tickwidth <= xtransform(bbox[0]) or xtransform(a) - Tickwidth >= xtransform(bbox[2]) : continue
-                if b <= bbox[1] or b >= bbox[3]: continue
-                
-                f.write('M{:.2f} {:.2f}H{:.2f}'.format(max(xtransform(a) - Tickwidth, xtransform(bbox[0])),
-                                                       ytransform(b),
-                                                         min(xtransform(a) + Tickwidth, xtransform(bbox[2]))))
-            f.write('"/>\n')
-    
             # Draw dots for the graph nodes 
             f.write('<g fill="red">\n')
             for x, y in zip(dot_x[:dot_i], dot_y[:dot_i]):
@@ -1193,6 +1184,18 @@ def save_scale_graph_as_svg(sgd, filename, log_yaxis=False, maxvertices=None,
                     f.write('<circle cx="{:.2f}" cy="{:.2f}" r="{}"/>\n'.
                             format(xtransform(x), ytransform(y), Tickwidth))
                 f.write('</g>\n')
+
+            # Horizontal tickmarks at interval boundaries
+            f.write('<path stroke="black" d="')
+            for a, b in zip(marker_x[:marker_i], marker_y[:marker_i]):
+    
+                if xtransform(a) + Tickwidth <= xtransform(bbox[0]) or xtransform(a) - Tickwidth >= xtransform(bbox[2]) : continue
+                if b <= bbox[1] or b >= bbox[3]: continue
+                
+                f.write('M{:.2f} {:.2f}H{:.2f}'.format(max(xtransform(a) - Tickwidth, xtransform(bbox[0])),
+                                                       ytransform(b),
+                                                         min(xtransform(a) + Tickwidth, xtransform(bbox[2]))))
+            f.write('"/>\n')
     
             # Draw the edges
             if verbose and sgd.edges:

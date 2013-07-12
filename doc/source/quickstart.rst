@@ -3,7 +3,10 @@ Quick start
 
 * Python Mapper has two different user interfaces: It provides a graphical interface, which conveniently bundles all steps like data input, computation of a filter function, the scale graph display, the Mapper step, visualization etc. on one screen, with all choices and parameters clearly laid out. This is a great, convenient way to explore a data set. Intermediate results are stored, so the interface also saves much time. For example, the filter function is not recomputed over and over again when the Mapper algorithm is re-run with changed parameters.
 
-* The graphical user interface is in ``mapper/bin/MapperGUI.py``.
+* The graphical user interface is in ``mapper/bin/MapperGUI.py``. Here is a screenshot:
+
+.. image:: /GUI_screenshot_single.png
+   :align: center
 
 * The second way to use Python Mapper is to import it as a Python module and write your own scripts. Writing your own script for a task is not as convenient, but it allows of course to change and extend the toolchain in the most flexible way.
 

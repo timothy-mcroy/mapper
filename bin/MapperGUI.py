@@ -1031,6 +1031,7 @@ class MapperWorkerProcess:
             ret = ('cutoff = {0}({1})\n'
                    'mapper_output.cutoff(cutoff, f, cover=cover{2})\n'
                    '\n'
+                   'plt.gca().cla()\n'
                    'mapper_output.draw_scale_graph()\n').\
                    format(cutoff_choices[Cutoff],
                           self.dict_to_str(Parameters),
@@ -1040,6 +1041,7 @@ class MapperWorkerProcess:
             ret = ('mapper.scale_graph(mapper_output, f, cover=cover,\n'
                    '        {1})\n'
                    '\n'
+                   'plt.gca().cla()\n'
                    'mapper_output.draw_scale_graph()\n').\
                    format(sg_choices[Cutoff],
                           self.dict_to_str(Parameters))
@@ -1065,6 +1067,7 @@ class MapperWorkerProcess:
         script += self.Script_Cutoff(**kwargs)
         script += ("\n"
                    "minsizes = {0}\n"
+                   "plt.gca().cla()\n"
                    "mapper_output.draw_2D(minsizes=minsizes)\n"
                    "plt.savefig('mapper_output.pdf')\n"
                    "\n"
