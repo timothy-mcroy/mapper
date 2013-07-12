@@ -62,8 +62,8 @@ DEBUGFLAGS=$DEBUGFLAGS' -Wswitch-default'
 DEBUGFLAGS=$DEBUGFLAGS' -Wnon-virtual-dtor -Wold-style-cast'
 DEBUGFLAGS=$DEBUGFLAGS' -Woverloaded-virtual'
 DEBUGFLAGS=$DEBUGFLAGS' -Werror'
-DEBUGFLAGS=$DEBUGFLAGS' -Waggregate-return'
-#DEBUGFLAGS=$DEBUGFLAGS' #-pedantic -pedantic-errors'
+#DEBUGFLAGS=$DEBUGFLAGS' -Waggregate-return'
+#DEBUGFLAGS=$DEBUGFLAGS' -pedantic -pedantic-errors'
 #DEBUGFLAGS=$DEBUGFLAGS' -Wl,--print-gc-sections'
 
 #extra_compile_args=${extra_compile_args:+${extra_compile_args} }$DEBUGFLAGS

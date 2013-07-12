@@ -45,11 +45,12 @@ for more information.
 #ifdef __GNUC__
 #pragma GCC diagnostic push
 #pragma GCC diagnostic ignored "-Waggregate-return"
+#pragma GCC diagnostic ignored "-Wunused-variable"
+#pragma GCC diagnostic ignored "-Wunneeded-internal-declaration"
 #endif
 #include <boost/graph/connected_components.hpp>
 #ifdef __GNUC__
 #pragma GCC diagnostic pop
-#pragma GCC diagnostic ignored "-Waggregate-return"
 #endif
 //#include <boost/graph/dijkstra_shortest_paths.hpp>
 #include <boost/graph/dijkstra_shortest_paths_no_color_map.hpp>
