@@ -137,7 +137,8 @@ class MapperInterfaceThread(Thread):
     def StartWorker(self):
         global WorkerProcess
 
-        from multiprocessing import Process, Pipe
+        from multiprocessing import Process, Pipe, freeze_support
+        freeze_support()
         child_conn, self.Conn = Pipe(duplex=True)
         self.Worker = Process(target=MapperWorkerProcess,
                               args=(child_conn,))
@@ -3358,7 +3359,7 @@ class GraphLaplacianParPanel(wx.Panel):
 class DissimilarityFilterListCtrl(wx.ListCtrl):
     def __init__(self, parent):
         wx.ListCtrl.__init__(self, parent,
-                             style=wx.LC_REPORT | wx.LC_VRULES | wx.LC_HRULES | 
+                             style=wx.LC_REPORT | wx.LC_VRULES | wx.LC_HRULES |
                              wx.LC_EDIT_LABELS)
         self.InsertColumn(0, 'Parameter')
         self.InsertColumn(1, 'Value')
@@ -4741,7 +4742,7 @@ class ScaleGraphFrame(FigureFrame):
 
     def OnToSvgFile(self, event):
         wildcard = ('Scalable Vector Graphics (*.svg)|*.svg'
-                   '|SVG + TeX (*.svg, *.tex)|*.svg;*.tex') 
+                   '|SVG + TeX (*.svg, *.tex)|*.svg;*.tex')
         FileDialog = wx.FileDialog(self, 'Mapper output figure',
                                    defaultDir=FigureFrame.LastSaveDir,
                                    style=wx.FD_SAVE | wx.FD_OVERWRITE_PROMPT,
@@ -4913,7 +4914,7 @@ class MainFrame(wx.Frame, StatusUpdate):
             if rslt is True:
                 msg = 'Loaded configuration from {0}.'.format(path)
             else:
-                ErrorDialog(self, 'Could not load configuration file: ' + 
+                ErrorDialog(self, 'Could not load configuration file: ' +
                             str(rslt))
                 msg = 'Could not load configuration from {0}.'.format(path)
             print(msg)
