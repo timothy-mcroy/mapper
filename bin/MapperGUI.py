@@ -137,8 +137,7 @@ class MapperInterfaceThread(Thread):
     def StartWorker(self):
         global WorkerProcess
 
-        from multiprocessing import Process, Pipe, freeze_support
-        freeze_support()
+        from multiprocessing import Process, Pipe
         child_conn, self.Conn = Pipe(duplex=True)
         self.Worker = Process(target=MapperWorkerProcess,
                               args=(child_conn,))
@@ -5062,5 +5061,13 @@ class MapperGUI(wx.App):
 
 # _prev_excepthook = sys.excepthook
 
-app = MapperGUI(0)
-app.MainLoop()
+if __name__=='__main__':
+    mapperpath = os.path.abspath(os.path.join(os.path.split(__file__)[0],
+        '..', '..'))
+    if mapperpath not in sys.path:
+        sys.path.append(mapperpath) 
+
+    from multiprocessing import freeze_support
+    freeze_support()
+    app = MapperGUI(0)
+    app.MainLoop()

@@ -835,7 +835,8 @@ class node:
         '''
         assert isinstance(points, ndarray)
         assert points.ndim == 1
-        assert points.dtype ==  int
+        assert points.dtype.kind == 'i',
+            'Expected integer data type but got ' + points.dtype
         for n in points:
             assert n>=0
 
