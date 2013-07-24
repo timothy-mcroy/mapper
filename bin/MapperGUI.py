@@ -1031,7 +1031,6 @@ class MapperWorkerProcess:
             ret = ('cutoff = {0}({1})\n'
                    'mapper_output.cutoff(cutoff, f, cover=cover{2})\n'
                    '\n'
-                   'plt.gca().cla()\n'
                    'mapper_output.draw_scale_graph()\n').\
                    format(cutoff_choices[Cutoff],
                           self.dict_to_str(Parameters),
@@ -1041,7 +1040,6 @@ class MapperWorkerProcess:
             ret = ('mapper.scale_graph(mapper_output, f, cover=cover,\n'
                    '        {1})\n'
                    '\n'
-                   'plt.gca().cla()\n'
                    'mapper_output.draw_scale_graph()\n').\
                    format(sg_choices[Cutoff],
                           self.dict_to_str(Parameters))
@@ -5062,10 +5060,17 @@ class MapperGUI(wx.App):
 # _prev_excepthook = sys.excepthook
 
 if __name__=='__main__':
+    # Try to adjust the Python search path so that users do not need
+    # to change it.
     mapperpath = os.path.abspath(os.path.join(os.path.split(__file__)[0],
         '..', '..'))
     if mapperpath not in sys.path:
-        sys.path.append(mapperpath) 
+        if os.path.isfile(os.path.join(mapperpath, 'mapper', '_mapper.py')):
+            sys.path.append(mapperpath)
+            print('Added ' + mapperpath + ' to the Python search path.')
+        else:
+            print('Warning: The Mapper package could not be found in its '
+                  'expected place in ' + mapperpath + '.')
 
     from multiprocessing import freeze_support
     freeze_support()

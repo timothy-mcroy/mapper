@@ -6,6 +6,7 @@ Python Mapper should be easy to install under Linux since all software packages 
 So far, installation has been tested under
 
 * Arch Linux
+* OS X Mountain Lion
 
 If you install Python Mapper on a certain platform not in the list above, please let me (`Daniel <http://danifold.net>`_) know so that I can extend the list. Especially if you needed to tweak or modify something, I am interested to know about it.
 
@@ -63,7 +64,7 @@ To update the repository, type::
 Installation
 ------------
 
-The Python Mapper archive can be extracted anywhere. Then add the ``mapper`` directory to the Python path.
+The Python Mapper archive can be extracted anywhere. Then add the directory where the files were extracted to `Python's search path <http://docs.python.org/2/install/#inst-search-path>`_. (Ie., add the directory which contains ``mapper`` as a subdirectory to the Python path.) The GUI tries to automatically adjust the Python path, so the last step is probably not necessary if you wish to use only the GUI.
 
 (Later, I'll provide a proper ``distutils`` setup, so users will not need to worry about the Python path.)
 
