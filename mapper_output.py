@@ -41,7 +41,7 @@ import scipy.sparse as scsp
 import numpy as np
 import networkx as nx
 
-from mapper.draw_mapper_output import draw_2D, draw_scale_graph, save_scale_graph_as_svg, save_scale_graph_as_pdf
+from mapper.draw_mapper_output import draw_2D, draw_scale_graph, save_scale_graph_as_pdf
 
 # Make the database imports optional
 try:
@@ -776,9 +776,6 @@ class mapper_output:
 
     def draw_scale_graph(self, **kwargs):
         return draw_scale_graph(self.scale_graph_data, **kwargs)
-
-    def save_scale_graph_as_svg(self, *args, **kwargs):
-        return save_scale_graph_as_svg(self.scale_graph_data, *args, **kwargs)
 
     def save_scale_graph_as_pdf(self, *args, **kwargs):
         return save_scale_graph_as_pdf(self.scale_graph_data, *args, **kwargs)
