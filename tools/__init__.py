@@ -17,3 +17,4 @@ for more information.
 from mapper.tools.shortest_path import *
 from mapper.tools.quickhull2d import *
 from mapper.tools.progressreporter import *
+from mapper.tools.pdfwriter import *

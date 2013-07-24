@@ -29,11 +29,11 @@ import os
 import re
 from math import ceil, floor, log
 from operator import getitem
-from itertools import combinations, count
+from itertools import combinations, count, product
 if sys.hexversion < 0x03000000:
     from itertools import izip as zip
     range = xrange
-from mapper.tools import qhull, shortest_path
+from mapper.tools import qhull, shortest_path, pdfwriter
 
 import networkx as nx
 # More imports in the 3D section
@@ -53,7 +53,8 @@ else:
     # (2,2,90) does work, too, but Matplotlib 1.1.0 knows the symbol '_'.
     hlinemarkersymbol = '_'
 
-__all__ = ['draw_2D', 'draw_3D', 'draw_scale_graph', 'save_scale_graph_as_svg',
+__all__ = ['draw_2D', 'draw_3D', 'draw_scale_graph',
+           'save_scale_graph_as_svg', 'save_scale_graph_as_pdf',
            'scale_graph_axes_args', 'scale_graph_axes_kwargs']
 
 # TBD:Rewrite draw_2D so that the output is an object that has efficient
@@ -857,13 +858,16 @@ def find_good_basis_for_axis_ticks(y, dy):
 class DummyFile:
     def __enter__(self):
         return self
-    
+
     def __exit__(self, type, value, traceback):
         print type
         print value
         print traceback
         pass
-    
+
+    def write(self, *args, **kwargs):
+        pass
+
 def save_scale_graph_as_svg(sgd, filename, log_yaxis=False, maxvertices=None,
                             width=None, height=None,
                             infinite_edges=None, verbose=True, bbox=[None, None, None, None],
@@ -914,16 +918,17 @@ def save_scale_graph_as_svg(sgd, filename, log_yaxis=False, maxvertices=None,
         bbox[2] = pathlength
     if bbox[3] is None:
         bbox[3] = 1.1 * maxdiameter
-        
+
     W = float(bbox[2] - bbox[0])
     assert W > 0, 'width must be positive'
-    assert not log_yaxis or bbox[1] > 0, 'lower bound must be positive for log axis'
+    assert not log_yaxis or bbox[1] > 0, \
+        'lower bound must be positive for log axis'
     if log_yaxis:
-        H = log(bbox[3]) - log(bbox[1])  
+        H = log(bbox[3]) - log(bbox[1])
     else:
         H = float(bbox[3] - bbox[1])
     assert H > 0, 'height must be positive'
-   
+
     if log_yaxis:
         e0 = int(floor(log(bbox[1], 10)))
         e1 = int(floor(log(bbox[3], 10)))
@@ -954,7 +959,7 @@ def save_scale_graph_as_svg(sgd, filename, log_yaxis=False, maxvertices=None,
 
     def xtransform(x):
         return (x - bbox[0]) / W * (Width - Leftoffset - Rightoffset) + Leftoffset
-    
+
     if log_yaxis:
         def ytransform(y):
             return Height - (log(y) - log(bbox[1])) / H * (Height - Bottomoffset - Topoffset) - Bottomoffset
@@ -969,7 +974,7 @@ def save_scale_graph_as_svg(sgd, filename, log_yaxis=False, maxvertices=None,
                                 if Z is not None]) + pathlength
     else:
         maxnumvertices = pathlength * maxvertices
-        
+
     with open(filename_no_ending + '.svg', 'w') as f:
         if tex_labels:
             texfile = open(filename_no_ending + '.tex', 'w')
@@ -977,19 +982,28 @@ def save_scale_graph_as_svg(sgd, filename, log_yaxis=False, maxvertices=None,
             texfile = DummyFile()
         with texfile as t:
             if tex_labels:
-                t.write('{\\def\\xlabel#1#2{\\rlap{\\hskip#1bp\\hbox to0pt{\\hss$#2$\\hss}}}%\n'
-                        '\\def\\ylabel#1#2{\\vbox to 0pt{\\vss\\hbox{$#2$\\,}\\vskip-\\prevdepth\\vskip-\\fontdimen22\\textfont2\\vskip#1bp}}%\n'
+                t.write('{\\def\\xlabel#1#2{\\rlap{\\hskip#1bp\\hbox to0pt{'
+                        '\\hss$#2$\\hss}}}%\n'
+                        '\\def\\ylabel#1#2{\\vbox to 0pt{\\vss\\hbox{$#2$\\,}'
+                        '\\vskip-\\prevdepth\\vskip-\\fontdimen22\\textfont2'
+                        '\\vskip#1bp}}%\n'
                         '\\setbox0\\vbox{\\lineskip0pt\\baselineskip0pt\n')
 
             f.write('<?xml version="1.0" encoding="utf-8" standalone="no"?>\n'
-                    '<!DOCTYPE svg PUBLIC "-//W3C//DTD SVG 1.1//EN" "http://www.w3.org/Graphics/SVG/1.1/DTD/svg11.dtd">\n'
-                    '<!-- Created with Python Mapper (http://www.danifold.net/mapper) -->\n'
-                    '<svg version="1.1" viewBox="0 0 {0} {1}" width="{0}pt" height="{1}pt" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink">\n'
-                    '<g fill="none" stroke-width="{2}" stroke-linecap="butt">\n'.
+                    '<!DOCTYPE svg PUBLIC "-//W3C//DTD SVG 1.1//EN" '
+                    '"http://www.w3.org/Graphics/SVG/1.1/DTD/svg11.dtd">\n'
+                    '<!-- Created with Python Mapper '
+                    '(http://www.danifold.net/mapper) -->\n'
+                    '<svg version="1.1" viewBox="0 0 {0} {1}" width="{0}pt" '
+                    'height="{1}pt" xmlns="http://www.w3.org/2000/svg" '
+                    'xmlns:xlink="http://www.w3.org/1999/xlink">\n'
+                    '<g fill="none" stroke-width="{2}" '
+                    'stroke-linecap="butt">\n'.
                         format(Width, Height, Linewidth))
-            
+
             f.write('<defs>\n')
-            f.write('<rect id="r" x="{:.2f}" y="{:.2f}" width="{:.2f}" height="{:.2f}" stroke="black" />\n'.
+            f.write('<rect id="r" x="{:.2f}" y="{:.2f}" width="{:.2f}" '
+                    'height="{:.2f}" stroke="black" />\n'.
                         format(min(xtransform(bbox[0]), xtransform(bbox[2])),
                                min(ytransform(bbox[1]), ytransform(bbox[3])),
                                abs(xtransform(bbox[0]) - xtransform(bbox[2])),
@@ -998,7 +1012,7 @@ def save_scale_graph_as_svg(sgd, filename, log_yaxis=False, maxvertices=None,
             f.write('<clipPath id="c">\n')
             f.write('<use xlink:href="#r"/>\n')
             f.write('</clipPath>\n')
-            
+
             xrange = min(pathlength - 1, bbox[2]) - max(0, bbox[0])
             if xrange > 25:
                 dx = 5
@@ -1006,68 +1020,92 @@ def save_scale_graph_as_svg(sgd, filename, log_yaxis=False, maxvertices=None,
                 dx = 2
             else:
                 dx = 1
-    
-            f.write('<g font-family="{}" font-size="{}" fill="black">\n'.format(Font, Fontsize))
-    
+
+            f.write('<g font-family="{}" font-size="{}" fill="black">\n'.
+                    format(Font, Fontsize))
+
             if log_yaxis:
                 for e in range(e0, e1 + 1):
                     y = 10 ** e;
                     if y <= bbox[1] or y >= bbox[3]: continue
                     if tex_labels:
-                        t.write('\\ylabel{{{:.2f}}}{{10^{{{}}}}}'.format(Height - ytransform(y), e))
+                        t.write('\\ylabel{{{:.2f}}}{{10^{{{}}}}}'.
+                                format(Height - ytransform(y), e))
                     else:
                         f.write('<text x="{:.2f}" y="{:.2f}">{}1e{}</text>\n'.
-                                format(0, ytransform(y) + .37 * Fontsize, Teststring, e))
+                                format(0, ytransform(y) + .37 * Fontsize,
+                                       Teststring, e))
             else:
                 for y in np.arange(sy, bbox[3], dy):
                     if y == 0:
                         y = 0
                     if tex_labels:
-                        t.write('\\ylabel{{{:.2f}}}{{{:.2g}}}\n'.format(Height - ytransform(y), y))
+                        t.write('\\ylabel{{{:.2f}}}{{{:.2g}}}\n'.
+                                format(Height - ytransform(y), y))
                     else:
-                        f.write('<text x="{:.2f}" y="{:.2f}">{}{:.2g}</text>\n'.
-                                format(0, ytransform(y) + .37 * Fontsize, Teststring, y))
-                    
+                        f.write('<text x="{:.2f}" y="{:.2f}">{}{:.2g}</text>'
+                                '\n'.format(0, ytransform(y) + .37 * Fontsize,
+                                            Teststring, y))
+
             if tex_labels:
                 t.write('}}%\n'
-                        '\\vbox{{\\lineskip.25\\baselineskip\\lineskiplimit\\lineskip\\baselineskip0pt\n'
+                        '\\vbox{{\\lineskip.25\\baselineskip\\lineskiplimit'
+                        '\\lineskip\\baselineskip0pt\n'
                         '\\hbox{{\\copy0\\includegraphics{{{}.pdf}}}}\n'
-                        '\\hbox{{\\hskip\\wd0\\hbox{{%\n'.format(filename_no_ending))
-                for x in range(max(0, int(ceil(bbox[0]))), min(pathlength - 1, int(floor(bbox[2]))), dx):
-                    t.write('\\xlabel{{{:.2f}}}{{{}}}%\n'.format(xtransform(x), x))
+                        '\\hbox{{\\hskip\\wd0\\hbox{{%\n'.
+                        format(filename_no_ending))
+                for x in range(max(0, int(ceil(bbox[0]))),
+                               min(pathlength, int(floor(bbox[2]))), dx):
+                    t.write('\\xlabel{{{:.2f}}}{{{}}}%\n'.
+                            format(xtransform(x), x))
                 t.write('}}}}%\n')
-            else:  
+            else:
                 f.write('<g text-anchor="middle">\n'.format(Fontsize))
-                for x in range(max(0, int(ceil(bbox[0]))), min(pathlength - 1, int(floor(bbox[2]))), dx):
+                for x in range(max(0, int(ceil(bbox[0]))),
+                               min(pathlength, int(floor(bbox[2]))), dx):
                     f.write('<text x="{:.2f}" y="{:.2f}">{}</text>\n'.
-                    format(xtransform(x), Height - Bottomoffset + Bottomlabeloffset, x))
+                    format(xtransform(x),
+                           Height - Bottomoffset + Bottomlabeloffset, x))
                 f.write('</g>\n')
-                    
+
             f.write('</g>\n')
-    
-            f.write('<g clip-path="url(#c)">\n'.format(Linewidth))
-            
+
+            f.write('<g clip-path="url(#c)">\n')
+
             f.write('<path stroke="black" d="')
-            for x in range(max(0, int(ceil(bbox[0]))), min(pathlength - 1, int(floor(bbox[2]))), dx):
-                f.write('M{:.2f} {:.2f}V{:.2f}'.format(xtransform(x), ytransform(bbox[1]), ytransform(bbox[1]) - 2 * Tickwidth))
-                f.write('M{:.2f} {:.2f}V{:.2f}'.format(xtransform(x), ytransform(bbox[3]), ytransform(bbox[3]) + 2 * Tickwidth))
+            for x in range(max(0, int(ceil(bbox[0]))),
+                           min(pathlength - 1, int(floor(bbox[2]))), dx):
+                f.write('M{:.2f} {:.2f}V{:.2f}'.format(
+                    xtransform(x),
+                    ytransform(bbox[1]), ytransform(bbox[1]) - 2 * Tickwidth))
+                f.write('M{:.2f} {:.2f}V{:.2f}'.format(
+                    xtransform(x), ytransform(bbox[3]),
+                    ytransform(bbox[3]) + 2 * Tickwidth))
             f.write('"/>\n')
-    
+
             f.write('<path stroke="black" d="')
-    
+
             if log_yaxis:
                 for e in range(e0, e1 + 1):
                     for i in range(1, 10):
                         y = i * 10 ** e;
                         if y <= bbox[1] or y >= bbox[3]: continue
-                        f.write('M{:.2f} {:.2f}H{:.2f}'.format(xtransform(bbox[0]), ytransform(y), xtransform(bbox[0]) + (1 + (i == 1)) * Tickwidth))
-                        f.write('M{:.2f} {:.2f}H{:.2f}'.format(xtransform(bbox[2]), ytransform(y), xtransform(bbox[2]) - (1 + (i == 1)) * Tickwidth))
+                        f.write('M{:.2f} {:.2f}H{:.2f}'.format(
+                            xtransform(bbox[0]), ytransform(y),
+                            xtransform(bbox[0]) + (1 + (i == 1)) * Tickwidth))
+                        f.write('M{:.2f} {:.2f}H{:.2f}'.format(
+                            xtransform(bbox[2]), ytransform(y),
+                            xtransform(bbox[2]) - (1 + (i == 1)) * Tickwidth))
             else:
                 for y in np.arange(sy, bbox[3], dy):
-                    f.write('M{:.2f} {:.2f}H{:.2f}'.format(xtransform(bbox[0]), ytransform(y), xtransform(bbox[0]) + 2 * Tickwidth))
-                    f.write('M{:.2f} {:.2f}H{:.2f}'.format(xtransform(bbox[2]), ytransform(y), xtransform(bbox[2]) - 2 * Tickwidth))
+                    f.write('M{:.2f} {:.2f}H{:.2f}'.format(
+                        xtransform(bbox[0]), ytransform(y),
+                        xtransform(bbox[0]) + 2 * Tickwidth))
+                    f.write('M{:.2f} {:.2f}H{:.2f}'.format(
+                        xtransform(bbox[2]), ytransform(y),
+                        xtransform(bbox[2]) - 2 * Tickwidth))
             f.write('"/>\n')
-    
+
             # Draw the light blue boxes for the intervals in the scale path
             f.write('<g fill="blue" fill-opacity=".1">\n')
             for a, b, c, d in _path_bars(sgd):
@@ -1075,17 +1113,17 @@ def save_scale_graph_as_svg(sgd, filename, log_yaxis=False, maxvertices=None,
                 assert b[0] == c[0]
                 assert c[1] == d[1]
                 assert d[0] == a[0]
-                
+
                 x0 = xtransform(max(a[0], bbox[0]))
                 y0 = ytransform(min(b[1], bbox[3]))
                 x1 = xtransform(min(b[0], bbox[2]))
                 y1 = ytransform(max(c[1], bbox[1]))
                 if x0 >= x1 or y0 >= y1: continue
-                
-                f.write('<rect x="{:.2f}" y="{:.2f}" width="{:.2f}" height="{:.2f}"/>\n'.
-                        format(x0, y0, x1 - x0, y1 - y0))
+
+                f.write('<rect x="{:.2f}" y="{:.2f}" width="{:.2f}" height='
+                        '"{:.2f}"/>\n'.format(x0, y0, x1 - x0, y1 - y0))
             f.write('</g>\n')
-    
+
             # Draw the nodes and the bars for the dendrograms
             if verbose:
                 print('Draw nodes and dendrograms.')
@@ -1130,57 +1168,67 @@ def save_scale_graph_as_svg(sgd, filename, log_yaxis=False, maxvertices=None,
                     ny = np.hstack((diameter + zero_vertex_offset, vy))
                 node_y.append(ny)
                 zerodot_y[i] = ny[0]
-    
-            # Broad stems for the part of the dendrograms that is neglected (ie. below "maxvertices")
-            f.write('<path stroke="#303030" stroke-width="{}" d="'.format(2 * Tickwidth))
+
+            # Broad stems for the part of the dendrograms that is neglected
+            # (ie. below "maxvertices")
+            f.write('<path stroke="#303030" stroke-width="{}" d="'.format(
+                2 * Tickwidth))
             for a, b in graylines:
-                # assert np.isclose(a[0],b[0]), (a[0], b[0]) 
+                # assert np.isclose(a[0],b[0]), (a[0], b[0])
                 # assert np.isclose(a[1], 0)
 
                 if xtransform(a[0]) + Tickwidth <= xtransform(bbox[0]) \
                     or xtransform(a[0]) - Tickwidth >= xtransform(bbox[2]):
                     continue
-                
-                y0 = ytransform(max(0, bbox[1])) 
+
+                y0 = ytransform(max(0, bbox[1]))
                 y1 = ytransform(min(b[1], bbox[3]))
                 if y0 <= y1: continue
-                 
-                f.write('M{:.2f} {:.2f}V{:.2f}'.format(xtransform(a[0]), y0, y1))
-                
+
+                f.write('M{:.2f} {:.2f}V{:.2f}'.format(
+                    xtransform(a[0]), y0, y1))
+
             f.write('"/>\n')
-    
+
             # Vertical stems for the dendrograms
             f.write('<path stroke="black" d="')
             for a, b in vertlines:
                 assert a[0] == b[0]
-    
+
                 if a[0] <= bbox[0] or a[0] >= bbox[2] : continue
-    
-                y0 = ytransform(max(b[1], bbox[1])) 
+
+                y0 = ytransform(max(b[1], bbox[1]))
                 y1 = ytransform(min(a[1], bbox[3]))
                 if y0 <= y1: continue
-                
-                f.write('M{:.2f} {:.2f}V{:.2f}'.format(xtransform(a[0]), y0, y1))
+
+                f.write('M{:.2f} {:.2f}V{:.2f}'.format(
+                    xtransform(a[0]), y0, y1))
             f.write('"/>\n')
-    
-            # Draw dots for the graph nodes 
+
+            # Draw dots for the graph nodes
             f.write('<g fill="red">\n')
             for x, y in zip(dot_x[:dot_i], dot_y[:dot_i]):
-                
-                if xtransform(x) + Tickwidth <= xtransform(bbox[0]) or xtransform(x) - Tickwidth >= xtransform(bbox[2]) : continue
-                if ytransform(y) + Tickwidth <= ytransform(bbox[3]) or ytransform(y) - Tickwidth >= ytransform(bbox[1]) : continue
-                
+
+                if xtransform(x) + Tickwidth <= xtransform(bbox[0]) or \
+                   xtransform(x) - Tickwidth >= xtransform(bbox[2]) : continue
+                if ytransform(y) + Tickwidth <= ytransform(bbox[3]) or \
+                   ytransform(y) - Tickwidth >= ytransform(bbox[1]) : continue
+
                 f.write('<circle cx="{:.2f}" cy="{:.2f}" r="{}"/>\n'.
                         format(xtransform(x), ytransform(y), Tickwidth))
             f.write('</g>\n')
-    
+
             if infinite_edges and sgd.edges:
                 f.write('<g fill="#0050FF">\n')
                 for x, y in enumerate(zerodot_y):
-    
-                    if xtransform(x) + Tickwidth <= xtransform(bbox[0]) or xtransform(x) - Tickwidth >= xtransform(bbox[2]) : continue
-                    if ytransform(y) + Tickwidth <= ytransform(bbox[3]) or ytransform(y) - Tickwidth >= ytransform(bbox[1]) : continue
-    
+
+                    if xtransform(x) + Tickwidth <= xtransform(bbox[0]) or \
+                       xtransform(x) - Tickwidth >= xtransform(bbox[2]):
+                        continue
+                    if ytransform(y) + Tickwidth <= ytransform(bbox[3]) or \
+                       ytransform(y) - Tickwidth >= ytransform(bbox[1]):
+                        continue
+
                     f.write('<circle cx="{:.2f}" cy="{:.2f}" r="{}"/>\n'.
                             format(xtransform(x), ytransform(y), Tickwidth))
                 f.write('</g>\n')
@@ -1188,19 +1236,21 @@ def save_scale_graph_as_svg(sgd, filename, log_yaxis=False, maxvertices=None,
             # Horizontal tickmarks at interval boundaries
             f.write('<path stroke="black" d="')
             for a, b in zip(marker_x[:marker_i], marker_y[:marker_i]):
-    
-                if xtransform(a) + Tickwidth <= xtransform(bbox[0]) or xtransform(a) - Tickwidth >= xtransform(bbox[2]) : continue
+
+                if xtransform(a) + Tickwidth <= xtransform(bbox[0]) or \
+                   xtransform(a) - Tickwidth >= xtransform(bbox[2]): continue
                 if b <= bbox[1] or b >= bbox[3]: continue
-                
-                f.write('M{:.2f} {:.2f}H{:.2f}'.format(max(xtransform(a) - Tickwidth, xtransform(bbox[0])),
-                                                       ytransform(b),
-                                                         min(xtransform(a) + Tickwidth, xtransform(bbox[2]))))
+
+                f.write('M{:.2f} {:.2f}H{:.2f}'.format(
+                    max(xtransform(a) - Tickwidth, xtransform(bbox[0])),
+                    ytransform(b),
+                    min(xtransform(a) + Tickwidth, xtransform(bbox[2]))))
             f.write('"/>\n')
-    
+
             # Draw the edges
             if verbose and sgd.edges:
                 print('Fill edge array.')
-    
+
             NE = sum(map(len, sgd.edges))
             L = np.empty((NE, 2, 2))
             C = np.empty(NE, bool)
@@ -1215,41 +1265,51 @@ def save_scale_graph_as_svg(sgd, filename, log_yaxis=False, maxvertices=None,
                 L[j:j + n, 1, 1] = y2[EE[:, 1]]
                 C[j:j + n] = EE[:, 2]
                 j += n
-    
+
             if len(L):
                 L1 = L[:j][C[:j]]
                 L2 = L[:j][np.logical_not(C[:j])]
-    
-                f.write('<path stroke="black" stroke-width="{}" shape-rendering="geometricPrecision" d="'.
+
+                f.write('<path stroke="black" stroke-width="{}" '
+                        'shape-rendering="geometricPrecision" d="'.
                         format(.2 * Linewidth))
                 for (x0, y0), (x1, y1) in L2:
-                    
-                    if x1 <= bbox[0] or x0 >= bbox[2] or min(y0, y1) <= bbox[1] or max(y0, y1) >= bbox[3]: continue
-                    
-                    f.write('M{:.2f} {:.2f}L{:.2f} {:.2f}'.format(xtransform(x0), ytransform(y0), xtransform(x1), ytransform(y1)))
+
+                    if x1 <= bbox[0] or x0 >= bbox[2] or \
+                       min(y0, y1) <= bbox[1] or max(y0, y1) >= bbox[3]:
+                        continue
+
+                    f.write('M{:.2f} {:.2f}L{:.2f} {:.2f}'.format(
+                        xtransform(x0), ytransform(y0), xtransform(x1),
+                        ytransform(y1)))
                 f.write('"/>\n')
-    
+
                 if infinite_edges and len(L1):
                     f.write('<path stroke="red" stroke-width="{}" d="'.
                             format(.2 * Linewidth))
                     for (x0, y0), (x1, y1) in L2:
-    
-                        if x1 <= bbox[0] or x0 >= bbox[2] or min(y0, y1) <= bbox[1] or max(y0, y1) >= bbox[3]: continue
-    
-                        f.write('M{:.2f} {:.2f}L{:.2f} {:.2f}'.format(xtransform(x0), ytransform(y0), xtransform(x1), ytransform(y1)))
+
+                        if x1 <= bbox[0] or x0 >= bbox[2] or \
+                           min(y0, y1) <= bbox[1] or max(y0, y1) >= bbox[3]:
+                            continue
+
+                        f.write('M{:.2f} {:.2f}L{:.2f} {:.2f}'.format(
+                            xtransform(x0), ytransform(y0),
+                            xtransform(x1), ytransform(y1)))
                     f.write('"/>\n')
-    
-            # Draw the green path with minimal vertical displacement 
+
+            # Draw the green path with minimal vertical displacement
             SP = shortest_scale_path(sgd)
             f.write('<path stroke="#00C000" stroke-width="{}" d="'.
                     format(2 * Linewidth))
             letter = 'M'
             for x, y in zip(count(0, .5), SP):
                 if x + .5 <= bbox[0] or x - .5 >= bbox[2]: continue
-                f.write('{}{:.2f} {:.2f}'.format(letter, xtransform(x), ytransform(y)))
+                f.write('{}{:.2f} {:.2f}'.format(
+                    letter, xtransform(x), ytransform(y)))
                 letter = 'L'
             f.write('"/>\n')
-    
+
             f.write('</g>\n'
                     '<use xlink:href="#r"/>\n'
                     '</g>\n'
@@ -1257,6 +1317,507 @@ def save_scale_graph_as_svg(sgd, filename, log_yaxis=False, maxvertices=None,
 
         # Return the bounding box (plus None for no node size).
         # return (xlim[0], ylim[0], xlim[1], ylim[1], None)
+
+def save_scale_graph_as_pdf(sgd, filename, log_yaxis=False, maxvertices=None,
+                            width=None, height=None,
+                            infinite_edges=None, verbose=True,
+                            bbox=[None, None, None, None],
+                            tex_labels=False):
+    '''
+    infinite_edges: True: draw edges with infinite weight
+                    False: don't draw
+                    None: auto mode, depends on whether the path
+                          has infinite weight edges
+    '''
+    if filename.endswith('.pdf') or (tex_labels and filename.endswith('.tex')):
+        filename_no_ending = filename[:-4]
+    else:
+        filename_no_ending = filename
+
+    if width is None:
+        Width = 200
+    else:
+        Width = width
+    if height is None:
+        Height = Width * .75
+    else:
+        Height = height
+    Linewidth = .4
+    Tickwidth = 1 # todo adjust tickwidth
+    Fontsize = max(Width/40.0, 12)
+    Bottomlabeloffset = Fontsize
+    Bottomoffset = .5 * Linewidth
+    if not tex_labels:
+        Bottomoffset += Bottomlabeloffset
+    Topoffset = .5 * Linewidth
+
+    Teststring = '00000000000000000000'
+    Teststring = ''
+
+    maxdiameter = max(sgd.diameter)
+    pathlength = len(sgd.path)
+
+    # bbox: left, bottom, right, top
+    bbox = list(bbox)
+    if bbox[0] is None:
+        bbox[0] = -1
+    if bbox[1] is None:
+        bbox[1] = -.05 * maxdiameter
+    if bbox[2] is None:
+        bbox[2] = pathlength
+    if bbox[3] is None:
+        bbox[3] = 1.1 * maxdiameter
+
+    W = float(bbox[2] - bbox[0])
+    assert W > 0, 'width must be positive'
+    assert not log_yaxis or bbox[1] > 0, \
+        'lower bound must be positive for log axis'
+    if log_yaxis:
+        H = log(bbox[3]) - log(bbox[1])
+    else:
+        H = float(bbox[3] - bbox[1])
+    assert H > 0, 'height must be positive'
+
+    from mapper import __version__
+    pdfpage = pdfwriter.OnePagePdf(filename_no_ending + '.pdf',
+                         title = 'Scale graph',
+                         compress = True,
+                         height = Height, width = Width,
+                         creator = 'Python Mapper ' + __version__)
+
+    if not tex_labels:
+        Labelfont = pdfpage.addFont(pdfwriter.CourierFont)
+
+    if log_yaxis:
+        e0 = int(floor(log(bbox[1], 10)))
+        e1 = int(floor(log(bbox[3], 10)))
+
+        if not tex_labels:
+            maxlen = Labelfont.width(Teststring + "0e{}".format(e0), Fontsize)
+            maxlen = max(maxlen, Labelfont.width(
+                Teststring + "0e{}".format(e1), Fontsize))
+    else:
+        dy = find_good_stepsize_for_axis_ticks(H)
+        sy = find_good_basis_for_axis_ticks(bbox[1], dy)
+
+        if not tex_labels:
+            maxlen = 0
+            for y in np.arange(sy, bbox[3], dy):
+                if y == 0:
+                    y = 0
+                maxlen = max(maxlen, Labelfont.width(
+                    Teststring + "{:.2g}".format(y), Fontsize))
+
+    # Extra space for y-axis labels: 1/2 space
+    if not tex_labels:
+        maxlen += .5 * Labelfont.width(' ', Fontsize)
+
+    Leftoffset = .5 * Linewidth
+    if not tex_labels:
+        Leftoffset += maxlen
+    Rightoffset = .5 * Linewidth
+
+    if maxvertices is None:
+        maxvertices = sgd.maxcluster
+    if sgd.edges and infinite_edges is None:
+        infinite_edges = (sgd.infmin > 0)
+
+    def xtransform(x):
+        return (x - bbox[0]) \
+            / W * (Width - Leftoffset - Rightoffset) + Leftoffset
+
+    if log_yaxis:
+        def ytransform(y):
+            return (log(y) - log(bbox[1])) \
+            / H * (Height - Bottomoffset - Topoffset) + Bottomoffset
+    else:
+        def ytransform(y):
+            return (y - bbox[1]) \
+            / H * (Height - Bottomoffset - Topoffset) + Bottomoffset
+
+    zero_vertex_offset = .05 * maxdiameter
+    assert pathlength == len(sgd.dendrogram) == len(sgd.diameter)
+    if maxvertices is None:  # TODO
+        maxnumvertices = sum([len(Z) for Z in sgd.dendrogram \
+                                if Z is not None]) + pathlength
+    else:
+        maxnumvertices = pathlength * maxvertices
+
+    pdfpage.setlinewidth(Linewidth)
+    pdfpage.setlinejoin(pdfpage.miterjoin)
+    pdfpage.setlinecap(pdfpage.buttcap)
+
+    if tex_labels:
+        texfile = open(filename_no_ending + '.tex', 'w')
+    else:
+        texfile = DummyFile()
+    with texfile as t:
+        if tex_labels:
+            t.write('{\\def\\xlabel#1#2{\\rlap{\\hskip#1bp\\hbox to0pt{'
+                    '\\hss$#2$\\hss}}}%\n'
+                    '\\def\\ylabel#1#2{\\vbox to 0pt{\\vss\\hbox{$#2$\\,}'
+                    '\\vskip-\\prevdepth\\vskip-\\fontdimen22\\textfont2'
+                    '\\vskip#1bp}}%\n'
+                    '\\setbox0\\vbox{\\lineskip0pt\\baselineskip0pt\n')
+
+        rectpath = pdfwriter.PDFPath()
+        rectpath.rectangle(xtransform(bbox[0]), ytransform(bbox[1]),
+                           xtransform(bbox[2]), ytransform(bbox[3]))
+
+        xrange = min(pathlength - 1, bbox[2]) - max(0, bbox[0])
+        if xrange > 25:
+            dx = 5
+        elif xrange > 15:
+            dx = 2
+        else:
+            dx = 1
+
+        if not tex_labels:
+            pdfpage.begintext()
+            pdfpage.selectfont(Labelfont, Fontsize)
+
+        if log_yaxis:
+            num_labels = 0
+            for e in range(e0, e1 + 1):
+                y = 10 ** e;
+                if y <= bbox[1] or y >= bbox[3]: continue
+                if tex_labels:
+                    t.write('\\ylabel{{{:.2f}}}{{10^{{{}}}}}'.
+                            format(ytransform(y), e))
+                else:
+                    pdfpage.putstring(
+                        '{}1e{}'.format(Teststring, e), 0,
+                        ytransform(y) - Labelfont.mathaxis(Fontsize))
+                num_labels += 1
+
+            if num_labels < 2:
+                for e, i in product(range(e0, e1 + 1), range(2, 10)):
+                    y = i * 10 ** e
+                    if y>bbox[3]: break
+                    if y>=bbox[1]:
+                        if tex_labels:
+                            t.write('\\ylabel{{{:.2f}}}{{{}\cdot10^{{{}}}}}'.
+                                    format(ytransform(y), i, e))
+                        else:
+                            pdfpage.putstring(
+                                '{}{}e{}'.format(Teststring, i, e), 0,
+                                ytransform(y) - Labelfont.mathaxis(Fontsize))
+                    break
+
+        else:
+            for y in np.arange(sy, bbox[3], dy):
+                if y == 0:
+                    y = 0
+                if tex_labels:
+                    t.write('\\ylabel{{{:.2f}}}{{{:.2g}}}\n'.
+                            format(ytransform(y), y))
+                else:
+                    pdfpage.putstring(
+                        '{}{:.2g}'.format(Teststring, y),
+                        0, ytransform(y) - Labelfont.mathaxis(Fontsize))
+
+        if tex_labels:
+            t.write('}}%\n'
+                    '\\vbox{{\\lineskip.25\\baselineskip\\lineskiplimit'
+                    '\\lineskip\\baselineskip0pt\n'
+                    '\\hbox{{\\copy0\\includegraphics{{{}.pdf}}}}\n'
+                    '\\hbox{{\\hskip\\wd0\\hbox{{%\n'.
+                    format(filename_no_ending))
+            for x in range(max(0, int(ceil(bbox[0]))),
+                           min(pathlength, int(floor(bbox[2]))), dx):
+                t.write('\\xlabel{{{:.2f}}}{{{}}}%\n'.
+                        format(xtransform(x), x))
+            t.write('}}}}%\n')
+        else:
+            for x in range(max(0, int(ceil(bbox[0]))),
+                           min(pathlength, int(floor(bbox[2]))), dx):
+                label = str(x)
+                pdfpage.putstring(
+                    label,
+                    xtransform(x) - .5 * Labelfont.width(label, Fontsize),
+                    Bottomoffset - Bottomlabeloffset)
+
+        pdfpage.endtext()
+        #f.write('</g>\n')
+
+        pdfpage.gsave()
+        pdfpage.clip(rectpath)
+
+        path = pdfwriter.PDFPath()
+        for x in range(max(0, int(ceil(bbox[0]))),
+                       min(pathlength - 1, int(floor(bbox[2]))), dx):
+            path.moveto(xtransform(x), ytransform(bbox[1]))
+            path.lineto(xtransform(x),
+                        ytransform(bbox[1]) + 2 * Tickwidth)
+            path.moveto(xtransform(x), ytransform(bbox[3]))
+            path.lineto(xtransform(x),
+                        ytransform(bbox[3]) - 2 * Tickwidth)
+        pdfpage.stroke(path)
+
+        #pdfpage.setstrokergbcolor(1,0,0)
+
+        path = pdfwriter.PDFPath()
+        if log_yaxis:
+            for e in range(e0, e1 + 1):
+                for i in range(1, 10):
+                    y = i * 10 ** e
+                    if y <= bbox[1] or y >= bbox[3]: continue
+                    path.moveto(xtransform(bbox[0]), ytransform(y))
+                    path.lineto(xtransform(bbox[0]) +
+                                2 * Tickwidth, ytransform(y))
+                    path.moveto(xtransform(bbox[2]), ytransform(y))
+                    path.lineto(xtransform(bbox[2]) -
+                                2 * Tickwidth, ytransform(y))
+        else:
+            for y in np.arange(sy, bbox[3], dy):
+                path.moveto(xtransform(bbox[0]), ytransform(y))
+                path.lineto(xtransform(bbox[0]) + 2 * Tickwidth,
+                            ytransform(y))
+                path.moveto(xtransform(bbox[2]), ytransform(y))
+                path.lineto(xtransform(bbox[2]) - 2 * Tickwidth,
+                            ytransform(y))
+        pdfpage.stroke(path)
+
+        # Draw the light blue boxes for the intervals in the scale path
+        pdfpage.gsave()
+        pdfpage.setfillrgbcolor(0,0,1)
+        pdfpage.setfillopacity(.1)
+        for a, b, c, d in _path_bars(sgd):
+            assert a[1] == b[1]
+            assert b[0] == c[0]
+            assert c[1] == d[1]
+            assert d[0] == a[0]
+
+            x0 = max(a[0], bbox[0])
+            y0 = min(b[1], bbox[3])
+            x1 = min(b[0], bbox[2])
+            y1 = max(c[1], bbox[1])
+            if x0 >= x1 or y0 <= y1: continue
+
+            rectpath = pdfwriter.PDFPath()
+            rectpath.rectangle(xtransform(x0), ytransform(y0),
+                               xtransform(x1), ytransform(y1))
+            pdfpage.fill(rectpath)
+
+        pdfpage.grestore()
+
+        # Draw the nodes and the bars for the dendrograms
+        if verbose:
+            print('Draw nodes and dendrograms.')
+        node_y = []
+        heights_ext = []
+        vertlines = np.empty((pathlength, 2, 2))
+        marker_x = np.empty(maxnumvertices + pathlength)
+        marker_y = np.empty_like(marker_x)
+        marker_i = 0
+        dot_x = np.empty(maxnumvertices)
+        dot_y = np.empty_like(dot_x)
+        dot_i = 0
+        zerodot_y = np.empty(pathlength)
+        graylines = np.empty((pathlength, 2, 2))
+        graylines_i = 0
+        for i, dendrogram, diameter in zip(count(), sgd.dendrogram,
+                                           sgd.diameter):
+            if diameter is None:
+                heights_ext.append(None)
+                vertlines[i] = (i, 0.)
+                ny = np.array([zero_vertex_offset])
+            else:
+                y = np.hstack((diameter, dendrogram[::-1, 2], 0))
+                heights_ext.append(y)
+                vy = .5 * (y[1:] + y[:-1])
+                if maxvertices is None:
+                    y_m = y
+                    vy_m = vy
+                else:
+                    y_m = y[:maxvertices + 1]
+                    vy_m = vy[:maxvertices]
+                    if y_m[-1] > 0:
+                        graylines[graylines_i] = ((i, 0.), (i, y_m[-1]))
+                        graylines_i += 1
+                vertlines[i] = ((i, y_m[0]), (i, y_m[-1]))
+                marker_x[marker_i:marker_i + len(y_m)].fill(i)
+                marker_y[marker_i:marker_i + len(y_m)] = y_m
+                marker_i += len(y_m)
+                dot_x[dot_i:dot_i + len(vy_m)].fill(i)
+                dot_y[dot_i:dot_i + len(vy_m)] = vy_m
+                dot_i += len(vy_m)
+                ny = np.hstack((diameter + zero_vertex_offset, vy))
+            node_y.append(ny)
+            zerodot_y[i] = ny[0]
+
+        # Vertical stems for the dendrograms
+        path = pdfwriter.PDFPath()
+        for a, b in vertlines:
+            assert a[0] == b[0]
+
+            if a[0] <= bbox[0] or a[0] >= bbox[2] : continue
+
+            y0 = max(b[1], bbox[1])
+            y1 = min(a[1], bbox[3])
+            if y0 >= y1: continue
+
+            path.moveto(xtransform(a[0]), ytransform(y0))
+            path.lineto(xtransform(a[0]), ytransform(y1))
+        pdfpage.stroke(path)
+
+        # Draw dots for the graph nodes
+        dotstream = (
+            'q {0} 0 0 {0} {1:.2f} {1:.2f} cm\n'
+            '0 279 m 0 125 125 0 279 0 c 433 0 558 125 558 279 c '
+            '558 433 433 558 279 558 c 125 558 0 433 0 279 c f Q'.format(
+                Tickwidth/279.0, -Tickwidth))
+        dotobj = pdfpage.addXObject(
+            [-Tickwidth, -Tickwidth, Tickwidth, Tickwidth], dotstream)
+
+        pdfpage.gsave()
+        pdfpage.setfillrgbcolor(1,0,0)
+        oldx = oldy = None
+        for x, y in zip(dot_x[:dot_i], dot_y[:dot_i]):
+            newx = '{:.2f}'.format(xtransform(x))
+            newy = '{:.2f}'.format(ytransform(y))
+            if newx==oldx and newy==oldy:
+                continue
+            oldx, oldy = newx, newy
+            if xtransform(x) + Tickwidth <= xtransform(bbox[0]) or \
+               xtransform(x) - Tickwidth >= xtransform(bbox[2]) : continue
+            if ytransform(y) + Tickwidth <= ytransform(bbox[1]) or \
+               ytransform(y) - Tickwidth >= ytransform(bbox[3]) : continue
+            pdfpage.putXObject(dotobj, xtransform(x), ytransform(y))
+        pdfpage.grestore()
+
+        if infinite_edges and sgd.edges:
+            pdfpage.gsave()
+            pdfpage.setfillrgbcolor(0,.3,1)
+            for x, y in enumerate(zerodot_y):
+                if xtransform(x) + Tickwidth <= xtransform(bbox[0]) or \
+                   xtransform(x) - Tickwidth >= xtransform(bbox[2]):
+                    continue
+                if ytransform(y) + Tickwidth <= ytransform(bbox[1]) or \
+                ytransform(y) - Tickwidth >= ytransform(bbox[3]):
+                    continue
+
+                pdfpage.putXObject(dotobj, xtransform(x), ytransform(y))
+            pdfpage.grestore()
+
+        # Horizontal tickmarks at interval boundaries
+        rectpath = pdfwriter.PDFPath()
+        for a, b in zip(marker_x[:marker_i], marker_y[:marker_i]):
+
+            if xtransform(a) + Tickwidth <= xtransform(bbox[0]) or \
+               xtransform(a) - Tickwidth >= xtransform(bbox[2]) : continue
+            if b <= bbox[1] or b >= bbox[3]: continue
+
+            path.moveto(max(xtransform(a) - Tickwidth,
+                            xtransform(bbox[0])), ytransform(b))
+            path.lineto(min(xtransform(a) + Tickwidth,
+                            xtransform(bbox[2])), ytransform(b))
+        pdfpage.stroke(path)
+
+        # Broad stems for the part of the dendrograms that is neglected
+        # (ie. below "maxvertices")
+        pdfpage.gsave()
+        pdfpage.setlinewidth(2*Tickwidth)
+        pdfpage.setstrokegray(.2)
+
+        path = pdfwriter.PDFPath()
+        for a, b in graylines:
+            # assert np.isclose(a[0],b[0]), (a[0], b[0])
+            # assert np.isclose(a[1], 0)
+
+            if xtransform(a[0]) + Tickwidth <= xtransform(bbox[0]) \
+                or xtransform(a[0]) - Tickwidth >= xtransform(bbox[2]):
+                continue
+
+            y0 = max(0, bbox[1])
+            y1 = min(b[1], bbox[3])
+            if y0 >= y1: continue
+
+            path.moveto(xtransform(a[0]), ytransform(y0))
+            path.lineto(xtransform(a[0]), ytransform(y1))
+        pdfpage.stroke(path)
+        pdfpage.grestore()
+
+        # Draw the edges
+        if verbose and sgd.edges:
+            print('Fill edge array.')
+
+        NE = sum(map(len, sgd.edges))
+        L = np.empty((NE, 2, 2))
+        C = np.empty(NE, bool)
+        j = 0
+        for i, E in enumerate(sgd.edges):
+            EE = np.array(E)  # columns: source, target, infinite
+            n = np.alen(EE)
+            y1 = node_y[i]
+            y2 = node_y[i + 1]
+            L[j:j + n, :, 0] = (i, i + 1)
+            L[j:j + n, 0, 1] = y1[EE[:, 0]]
+            L[j:j + n, 1, 1] = y2[EE[:, 1]]
+            C[j:j + n] = EE[:, 2]
+            j += n
+
+        if len(L):
+            L1 = L[:j][C[:j]]
+            L2 = L[:j][np.logical_not(C[:j])]
+
+            pdfpage.gsave()
+            pdfpage.setlinewidth(.2 * Linewidth)
+            path = pdfwriter.PDFPath()
+            # todo    'shape-rendering="geometricPrecision"
+
+            for (x0, y0), (x1, y1) in L2:
+
+                if x1 <= bbox[0] or x0 >= bbox[2] or \
+                   min(y0, y1) <= bbox[1] or max(y0, y1) >= bbox[3]:
+                    continue
+
+                path.moveto(xtransform(x0), ytransform(y0))
+                path.lineto(xtransform(x1), ytransform(y1))
+
+            pdfpage.stroke(path)
+
+            if infinite_edges and len(L1):
+                pdfpage.gsave()
+                pdfpage.setstrokergbcolor(1,0,0)
+                path = pdfwriter.PDFPath()
+
+                for (x0, y0), (x1, y1) in L2:
+
+                    if x1 <= bbox[0] or x0 >= bbox[2] or \
+                       min(y0, y1) <= bbox[1] or max(y0, y1) >= bbox[3]:
+                        continue
+
+                    path.moveto(xtransform(x0), ytransform(y0))
+                    path.lineto(xtransform(x1), ytransform(y1))
+                pdfpage.stroke(path)
+                pdfpage.grestore()
+
+            pdfpage.grestore()
+
+
+        # Draw the green path with minimal vertical displacement
+        SP = shortest_scale_path(sgd)
+        pdfpage.gsave()
+        pdfpage.setlinewidth(2 * Linewidth)
+        pdfpage.setstrokergbcolor(0,.75,0)
+        pdfpage.setlinecap(pdfpage.roundcap)
+        path = pdfwriter.PDFPath()
+
+        moveto = True
+        for x, y in zip(count(0, .5), SP):
+            if x + .5 <= bbox[0] or x - .5 >= bbox[2]: continue
+            if moveto:
+                path.moveto(xtransform(x), ytransform(y))
+                moveto = False
+            else:
+                path.lineto(xtransform(x), ytransform(y))
+        pdfpage.stroke(path)
+        pdfpage.grestore()
+
+    pdfpage.grestore()
+    pdfpage.stroke(rectpath)
+    pdfpage.generate()
 
 def _path_bars(sgd):
     '''A generator!'''
