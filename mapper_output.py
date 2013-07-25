@@ -21,16 +21,15 @@ from itertools import chain, combinations, count
 # Efficient iterators for both Python 2 and 3
 if sys.hexversion < 0x03000000:
     from itertools import izip as zip
+    range = xrange
 
-    def dict_values(d):
-        return d.itervalues()
-    def dict_items(d):
-        return d.iteritems()
+    dict_keys = dict.iterkeys
+    dict_values = dict.itervalues
+    dict_items = dict.iteritems
 else:
-    def dict_values(d):
-        return d.values()
-    def dict_items(d):
-        return d.items()
+    dict_keys = dict.keys
+    dict_values = dict.values
+    dict_items = dict.items
 
 from collections import defaultdict
 from pickle import load, dump
@@ -1006,7 +1005,7 @@ class simpl_complex:
         complex any more. However, the method generates a minimal
         representation for drawing.
         '''
-        for dim in xrange(self.dimension, 2, -1):
+        for dim in range(self.dimension, 2, -1):
             for simplex in self[dim]:
                 self.__remove_faces(simplex)
 

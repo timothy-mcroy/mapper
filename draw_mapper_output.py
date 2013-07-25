@@ -33,7 +33,8 @@ from itertools import combinations, count, product
 if sys.hexversion < 0x03000000:
     from itertools import izip as zip
     range = xrange
-from mapper.tools import qhull, shortest_path, pdfwriter
+from mapper.tools import qhull, shortest_path, pdfwriter, graphviz_node_pos
+from mapper.mapper_output import dict_keys, dict_values, dict_items
 
 import networkx as nx
 # More imports in the 3D section
@@ -133,11 +134,10 @@ def draw_2D(M, ax=None, node_labels=None, node_colors=None, legend=True, verbose
     if minsizes:
         S = S.remove_small_simplices(minsizes)
     # Caution: Not all nodes may be vertices!
-    G, vertices = S.to_nx_Graph()
-
-    # tbd: 'size' and 'ratio' parameter
-    vertex_pos = nx.graphviz_layout(G, prog='neato')
-    vertex_pos = np.array([vertex_pos[v] for v in vertices])
+    vertices, vertex_pos = graphviz_node_pos(M.nodes, S)
+    
+    vertices = np.array(vertices)
+    vertex_pos = np.array(vertex_pos)
 
     if not vertex_pos.size:
         vertex_pos = np.empty((0, 2))
@@ -230,8 +230,8 @@ def draw_2D(M, ax=None, node_labels=None, node_colors=None, legend=True, verbose
 
     # Relate the line thickness to the weight of each edge.
     if S.dimension >= 1:
-        edgecoor = node_pos[S[1].keys(), :]
-        edge_weights = np.array(S[1].values(), dtype=np.float)
+        edgecoor = node_pos[list(S[1].keys()), :]
+        edge_weights = np.fromiter(dict_values(S[1]), dtype=np.float, count=len(S[1]))
         linewidths = .1 + 3 * (edge_weights / edge_weights.max()) ** .5
         edges = mpl.collections.LineCollection(segments=edgecoor,
                                                linewidths=linewidths,
@@ -309,6 +309,9 @@ def draw_2D(M, ax=None, node_labels=None, node_colors=None, legend=True, verbose
                         **textkwargs
                         )
 
+        print node_labels
+        print 'CCCCCCCCCCCCCCCCCCCCCC"'
+    
     # legend
     # This is subject to change!
     if legend:
@@ -860,9 +863,6 @@ class DummyFile:
         return self
 
     def __exit__(self, type, value, traceback):
-        print type
-        print value
-        print traceback
         pass
 
     def write(self, *args, **kwargs):
@@ -893,8 +893,8 @@ def save_scale_graph_as_pdf(sgd, filename, log_yaxis=False, maxvertices=None,
     else:
         Height = height
     Linewidth = .4
-    Tickwidth = 1 # todo adjust tickwidth
-    Fontsize = max(Width/40.0, 12)
+    Tickwidth = 1  # todo adjust tickwidth
+    Fontsize = max(Width / 40.0, 12)
     Bottomlabeloffset = Fontsize
     Bottomoffset = .5 * Linewidth
     if not tex_labels:
@@ -930,10 +930,10 @@ def save_scale_graph_as_pdf(sgd, filename, log_yaxis=False, maxvertices=None,
 
     from mapper import __version__
     pdfpage = pdfwriter.OnePagePdf(filename_no_ending + '.pdf',
-                         title = 'Scale graph',
-                         compress = True,
-                         height = Height, width = Width,
-                         creator = 'Python Mapper ' + __version__)
+                         title='Scale graph',
+                         compress=True,
+                         height=Height, width=Width,
+                         creator='Python Mapper ' + __version__)
 
     if not tex_labels:
         Labelfont = pdfpage.addFont(pdfwriter.CourierFont)
@@ -1043,8 +1043,8 @@ def save_scale_graph_as_pdf(sgd, filename, log_yaxis=False, maxvertices=None,
             if num_labels < 2:
                 for e, i in product(range(e0, e1 + 1), range(2, 10)):
                     y = i * 10 ** e
-                    if y>bbox[3]: break
-                    if y>=bbox[1]:
+                    if y > bbox[3]: break
+                    if y >= bbox[1]:
                         if tex_labels:
                             t.write('\\ylabel{{{:.2f}}}{{{}\cdot10^{{{}}}}}'.
                                     format(ytransform(y), i, e))
@@ -1088,7 +1088,7 @@ def save_scale_graph_as_pdf(sgd, filename, log_yaxis=False, maxvertices=None,
                     Bottomoffset - Bottomlabeloffset)
 
         pdfpage.endtext()
-        #f.write('</g>\n')
+        # f.write('</g>\n')
 
         pdfpage.gsave()
         pdfpage.clip(rectpath)
@@ -1104,7 +1104,7 @@ def save_scale_graph_as_pdf(sgd, filename, log_yaxis=False, maxvertices=None,
                         ytransform(bbox[3]) - 2 * Tickwidth)
         pdfpage.stroke(path)
 
-        #pdfpage.setstrokergbcolor(1,0,0)
+        # pdfpage.setstrokergbcolor(1,0,0)
 
         path = pdfwriter.PDFPath()
         if log_yaxis:
@@ -1113,10 +1113,10 @@ def save_scale_graph_as_pdf(sgd, filename, log_yaxis=False, maxvertices=None,
                     y = i * 10 ** e
                     if y <= bbox[1] or y >= bbox[3]: continue
                     path.moveto(xtransform(bbox[0]), ytransform(y))
-                    path.lineto(xtransform(bbox[0]) +
+                    path.lineto(xtransform(bbox[0]) + 
                                 2 * Tickwidth, ytransform(y))
                     path.moveto(xtransform(bbox[2]), ytransform(y))
-                    path.lineto(xtransform(bbox[2]) -
+                    path.lineto(xtransform(bbox[2]) - 
                                 2 * Tickwidth, ytransform(y))
         else:
             for y in np.arange(sy, bbox[3], dy):
@@ -1130,7 +1130,7 @@ def save_scale_graph_as_pdf(sgd, filename, log_yaxis=False, maxvertices=None,
 
         # Draw the light blue boxes for the intervals in the scale path
         pdfpage.gsave()
-        pdfpage.setfillrgbcolor(0,0,1)
+        pdfpage.setfillrgbcolor(0, 0, 1)
         pdfpage.setfillopacity(.1)
         for a, b, c, d in _path_bars(sgd):
             assert a[1] == b[1]
@@ -1216,17 +1216,17 @@ def save_scale_graph_as_pdf(sgd, filename, log_yaxis=False, maxvertices=None,
             'q {0} 0 0 {0} {1:.2f} {1:.2f} cm\n'
             '0 279 m 0 125 125 0 279 0 c 433 0 558 125 558 279 c '
             '558 433 433 558 279 558 c 125 558 0 433 0 279 c f Q'.format(
-                Tickwidth/279.0, -Tickwidth))
+                Tickwidth / 279.0, -Tickwidth))
         dotobj = pdfpage.addXObject(
             [-Tickwidth, -Tickwidth, Tickwidth, Tickwidth], dotstream)
 
         pdfpage.gsave()
-        pdfpage.setfillrgbcolor(1,0,0)
+        pdfpage.setfillrgbcolor(1, 0, 0)
         oldx = oldy = None
         for x, y in zip(dot_x[:dot_i], dot_y[:dot_i]):
             newx = '{:.2f}'.format(xtransform(x))
             newy = '{:.2f}'.format(ytransform(y))
-            if newx==oldx and newy==oldy:
+            if newx == oldx and newy == oldy:
                 continue
             oldx, oldy = newx, newy
             if xtransform(x) + Tickwidth <= xtransform(bbox[0]) or \
@@ -1238,7 +1238,7 @@ def save_scale_graph_as_pdf(sgd, filename, log_yaxis=False, maxvertices=None,
 
         if infinite_edges and sgd.edges:
             pdfpage.gsave()
-            pdfpage.setfillrgbcolor(0,.3,1)
+            pdfpage.setfillrgbcolor(0, .3, 1)
             for x, y in enumerate(zerodot_y):
                 if xtransform(x) + Tickwidth <= xtransform(bbox[0]) or \
                    xtransform(x) - Tickwidth >= xtransform(bbox[2]):
@@ -1267,7 +1267,7 @@ def save_scale_graph_as_pdf(sgd, filename, log_yaxis=False, maxvertices=None,
         # Broad stems for the part of the dendrograms that is neglected
         # (ie. below "maxvertices")
         pdfpage.gsave()
-        pdfpage.setlinewidth(2*Tickwidth)
+        pdfpage.setlinewidth(2 * Tickwidth)
         pdfpage.setstrokegray(.2)
 
         path = pdfwriter.PDFPath()
@@ -1329,7 +1329,7 @@ def save_scale_graph_as_pdf(sgd, filename, log_yaxis=False, maxvertices=None,
 
             if infinite_edges and len(L1):
                 pdfpage.gsave()
-                pdfpage.setstrokergbcolor(1,0,0)
+                pdfpage.setstrokergbcolor(1, 0, 0)
                 path = pdfwriter.PDFPath()
 
                 for (x0, y0), (x1, y1) in L2:
@@ -1350,7 +1350,7 @@ def save_scale_graph_as_pdf(sgd, filename, log_yaxis=False, maxvertices=None,
         SP = shortest_scale_path(sgd)
         pdfpage.gsave()
         pdfpage.setlinewidth(2 * Linewidth)
-        pdfpage.setstrokergbcolor(0,.75,0)
+        pdfpage.setstrokergbcolor(0, .75, 0)
         pdfpage.setlinecap(pdfpage.roundcap)
         path = pdfwriter.PDFPath()
 
