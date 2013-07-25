@@ -43,7 +43,7 @@ def asBytes(s):
     elif isinstance(s, int):
         return enc(str(s))
     elif isinstance(s, float):
-        if abs(s)<1:
+        if abs(s) < 1:
             return enc('{:.3f}'.format(s))
         else:
             return enc('{:.2f}'.format(s))
@@ -152,9 +152,9 @@ class XObject(StreamObject, containsXObjectReferences,
         StreamObject.__init__(self, Ob, compress=compress)
         self['Type'] = '/XObject'
         self['Subtype'] = '/Form'
-        #self['FormType'] = '1'
+        # self['FormType'] = '1'
         self['BBox'] = Array(bbox)
-        #self['Matrix'] = Array([1,0,0,1,0,0])
+        # self['Matrix'] = Array([1,0,0,1,0,0])
 
         Resources = Dictionary()
         Resources['ProcSet'] = Array(['/PDF'])
@@ -199,9 +199,9 @@ class OnePagePdf(containsXObjectReferences, containsExtGStateReferences,
     """ Text2pdf converter in pure Python """
 
     def __init__(self, ofile, title='', subject='', author='',
-                 creator = None, producer = None,
+                 creator=None, producer=None,
                  keywords=[],
-                 height = 792, width=612,
+                 height=792, width=612,
                  compress=True):
         #
         self._appname = "Python Mapper"
@@ -214,11 +214,11 @@ class OnePagePdf(containsXObjectReferences, containsExtGStateReferences,
         # Author
         self._author = asciiOrUtf16(author)
         # Keywords
-        self._keywords = asciiOrUtf16(" ".join(keywords)) # todo
+        self._keywords = asciiOrUtf16(" ".join(keywords))  # todo
 
         if creator is None:
             self._creator = asciiOrUtf16(
-                self._appname +
+                self._appname + 
                 u" (© Daniel Müllner and Aravindakshan Babu)")
         else:
             self._creator = asciiOrUtf16(creator)
@@ -279,8 +279,8 @@ class OnePagePdf(containsXObjectReferences, containsExtGStateReferences,
             Info["Keywords"] = b"(" + self._keywords + b")"
         Info["Creator"] = b"(" + self._creator + b")"
         Info["Producer"] = b"(" + self._producer + b")"
-        t=time.localtime()
-        timestr=time.strftime("D:%Y%m%d%H%M%S", t)
+        t = time.localtime()
+        timestr = time.strftime("D:%Y%m%d%H%M%S", t)
         Info["CreationDate"] = "(" + timestr + ")"
 
         Catalog['Type'] = '/Catalog'
@@ -288,7 +288,7 @@ class OnePagePdf(containsXObjectReferences, containsExtGStateReferences,
 
         Pages['Type'] = '/Pages'
         Pages['Count'] = '1'
-        Pages['MediaBox'] = Array([0,0, self._pageWd, self._pageHt])
+        Pages['MediaBox'] = Array([0, 0, self._pageWd, self._pageHt])
         Pages['Kids'] = Array([Page.reference()])
 
         if 'ProcSet' not in self.Resources:
@@ -308,7 +308,7 @@ class OnePagePdf(containsXObjectReferences, containsExtGStateReferences,
         for o in self.Objects:
             locations.append(self._fpos)
             ws(o)
-        size = len(locations)+1
+        size = len(locations) + 1
 
         Tr = Trailer(self._fpos)
         Tr['Size'] = size
@@ -380,7 +380,7 @@ class OnePagePdf(containsXObjectReferences, containsExtGStateReferences,
     def setstrokegray(self, x):
         self.addContent('{} G'.format(x))
 
-    def setfillopacity(self, ca): # todo repetitions
+    def setfillopacity(self, ca):  # todo repetitions
         gs = self.addExtGState()
         gs['ca'] = ca
         self.addExtGStateReference(gs)
@@ -411,7 +411,7 @@ class PDFPath:
 
     def rectangle(self, x0, y0, x1, y1):
         self.stream += '{:.2f} {:.2f} {:.2f} {:.2f} re '.format(
-            min(x0, x1), min(y0, y1), abs(x0-x1), abs(y0-y1))
+            min(x0, x1), min(y0, y1), abs(x0 - x1), abs(y0 - y1))
 
     def moveto(self, x, y):
         self.stream += '{:.2f} {:.2f} m '.format(x, y)
@@ -442,25 +442,25 @@ class CourierFont(Font):
 
 if __name__ == "__main__":
     args = sys.argv
-    if len(args)<2:
+    if len(args) < 2:
         sys.exit('Error: input file argument missing')
-    elif len(args)>2:
+    elif len(args) > 2:
         sys.exit('Error: Too many arguments')
     ofile = args[1]
 
-    pdfpage=OnePagePdf(ofile, width=300, height=700,
+    pdfpage = OnePagePdf(ofile, width=300, height=700,
                        title='Test', compress=False)
 
     stream = (
         '0 29 m 0 13 13 0 29 0 c 45 0 58 13 58 29 c 58 45 45 58 29 58 c 13 58 0 45 0 29 c f')
-    obj1 = pdfpage.addXObject([0,0,58,58], stream)
+    obj1 = pdfpage.addXObject([0, 0, 58, 58], stream)
 
     pdfpage.setlinewidth(10)
     pdfpage.setstrokergbcolor(1, .5, 0)
     pdfpage.setfillrgbcolor(1, 0, 1)
     path = PDFPath()
-    path.moveto(0,0)
-    path.lineto(200,600)
+    path.moveto(0, 0)
+    path.lineto(200, 600)
     pdfpage.stroke(path)
 
     pdfpage.putXObject(obj1, 0, 0)
