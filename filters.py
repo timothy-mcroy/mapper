@@ -196,9 +196,9 @@ def graph_Laplacian(data, eps, n=1, k=1, weighted_edges=False, sigma_eps=1.,
                     callback=None):
     r'''Graph Laplacian of the neighborhood graph.
 
-* First, if *k* is ``None`` or 0, form the *eps*-neighborhood graph of the data set: vertices are the data points; two points are connected if their distance is at most *eps*.
+* First, if *k* is 1, form the *eps*-neighborhood graph of the data set: vertices are the data points; two points are connected if their distance is at most *eps*.
 
-* Alternatively, if *k* is given, form the neighborhood graph from the
+* Alternatively, if *k* is greater than 1, form the neighborhood graph from the
   :math:`k`-th nearest neighbors of each point. Each point counts as its first
   nearest neighbor, so feasible values start with :math:`k=2`.
 

@@ -2862,7 +2862,7 @@ class MyMetricPane(CollapsiblePane):
 
         NnghbrText = wx.StaticText(self.hbox2Panel,
                                         label='No. of nearest neighbors k ')
-        self.Nnghbrs = wx.SpinCtrl(self.hbox2Panel, value='1', size=(48, -1),
+        self.Nnghbrs = wx.SpinCtrl(self.hbox2Panel, value='2', size=(48, -1),
                                    min=2, max=10000)
         EpsText = wx.StaticText(self.hbox2Panel, label=u'ε ')
         self.Eps = EpsCtrl(self.hbox2Panel)
@@ -3295,13 +3295,13 @@ class GraphLaplacianParPanel(wx.Panel):
                  flag=wx.ALIGN_CENTER_VERTICAL)
 
         self.k = NumCtrl(self,
-                         value=0,
+                         value=1,
                          size=(54, -1),
                          style=wx.TE_RIGHT,
                          integerWidth=6,
                          fractionWidth=0,
                          groupDigits=False,
-                         min=0,
+                         min=1,
                          max=999999,
                          )
         self.k.SetFont(self.GetFont())
