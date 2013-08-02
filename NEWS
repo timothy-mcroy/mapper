@@ -21,3 +21,7 @@ Version 0.1.2 07/11/2013:
 Version 0.1.3 07/16/2013:
 
   • Fix for Windows: multiprocessing.freeze_support()
+
+Version 0.1.4 08/01/2013:
+
+  • Improved thread communication
