@@ -46,7 +46,7 @@ oldwx = (wxversion[:2] < [2, 9])
    ###  Mapper worker class
    ##############################################################'''
 
-from threading import Thread
+from threading import Thread, Lock, Condition
 from errno import EINTR
 
 class JobInterrupt:
@@ -85,6 +85,9 @@ class MapperInterfaceThread(Thread):
         self._notify_dest = notify_dest
         self._event = event
         self._want_terminate = False
+        self._lock = Lock()
+        self._want_acquire = False
+        self._condition = Condition(Lock())
         # self.daemon = False
         # Do not automatically terminate when the main terminates: we need this
         # thread to terminate the subprocess cleanly.
@@ -93,14 +96,19 @@ class MapperInterfaceThread(Thread):
         self.start()
 
     def run(self):
-        while not self._want_terminate:
-            # Wait for the answer (while not blocking the other thread(s))
-            IO_OK = False
-            while not self._want_terminate:
+        # Wait for the answer (while not blocking the other thread(s))
+        while True:
+            self._condition.acquire()
+            while self._want_acquire:
+                self._condition.wait()
+            self._condition.release()
+            answer = None
+            with self._lock:
+                if self._want_terminate:
+                    break
                 try:
                     if self.Conn.poll(.5):
-                        IO_OK = True
-                        break
+                        answer = self.Conn.recv()
                 except IOError as e:
                     # See
                     # http://stackoverflow.com/questions/4952247/
@@ -108,29 +116,28 @@ class MapperInterfaceThread(Thread):
                     if e.errno != EINTR:
                         print 'IO error detected.'
                         raise
-                        # break
 
-            if not self._want_terminate and IO_OK:
-                answer = self.Conn.recv()
-                if answer[0] == 'JobFinished':
-                    jobnr = answer[1]
-                    sys.stderr.write('Job {0} is finished.\n'.format(jobnr))
-                    if jobnr not in self.jobs:
-                        raise ValueError('Job no. {0} is not in the ' \
-                                             'list of current jobs.\n'\
-                                             .format(jobnr))
-                    else:
-                        self.jobs.remove(jobnr)
-                    if self.jobs:
-                        continue
-                    else:
-                        answer = ('NoPending', {})
-                elif answer[0] != 'Progress':
-                    sys.stderr.write('Answer received by thread: {0}.\n'\
-                                         .format(answer[0]))
-                event = self._event(answer=answer)
-                # Notify the main thread about the answer
-                wx.PostEvent(self._notify_dest, event)
+            if answer == None:
+                continue
+            elif answer[0] == 'JobFinished':
+                jobnr = answer[1]
+                sys.stderr.write('Job {0} is finished.\n'.format(jobnr))
+                if jobnr not in self.jobs:
+                    raise ValueError('Job no. {0} is not in the ' \
+                                         'list of current jobs.\n'\
+                                         .format(jobnr))
+                else:
+                    self.jobs.remove(jobnr)
+                if self.jobs:
+                    continue
+                else:
+                    answer = ('NoPending', {})
+            elif answer[0] != 'Progress':
+                sys.stderr.write('Answer received by thread: {0}.\n'\
+                                     .format(answer[0]))
+            event = self._event(answer=answer)
+            # Notify the main thread about the answer
+            wx.PostEvent(self._notify_dest, event)
 
         sys.stderr.write('The Mapper interface thread has stopped.\n')
 
@@ -147,13 +154,26 @@ class MapperInterfaceThread(Thread):
         sys.stderr.write('A new Mapper worker process was started.\n')
 
     def RestartWorker(self):
+        self._condition.acquire()
+        self._want_acquire = True
+        self._lock.acquire()
+        self._want_acquire = False
+        self._condition.notify()
+        self._condition.release()
         self.StopWorker()
         self.StartWorker()
-        return self.Conn
+        self._lock.release()
 
     def StopInterface(self):
-        self._want_terminate = True
+        self._condition.acquire()
+        self._want_acquire = True
+        self._lock.acquire()
+        self._want_acquire = False
+        self._condition.notify()
+        self._condition.release()
         self.StopWorker()
+        self._want_terminate = True
+        self._lock.release()
 
     def StopWorker(self):
         if self.Worker.is_alive():
@@ -4014,7 +4034,7 @@ class MainPanel(wx.Panel, StatusUpdate, MapperJob):
         wx.CallAfter(self.OnInterruptPhase2)
 
     def OnInterruptPhase2(self):
-        conn = self.MapperThread.RestartWorker()
+        self.MapperThread.RestartWorker()
         self.PostMapperJob('Start', {})
 
     def OnRequestHistogram(self, event):
