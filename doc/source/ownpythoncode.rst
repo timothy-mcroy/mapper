@@ -70,6 +70,10 @@ Similar to input data processing, there is an input field in the GUI which allow
 
   The filter function, a 1-dimensional ``numpy.ndarray`` with ``double`` data type and length equal to the number of data points. Change this variable to modify or replace the filter function.
 
+.. py:data:: data
+
+  The point cloud data, after all previous steps (preprocessing, metric). This variable is not being rewritten to the rest of the Mapper analysis if it is modified here.
+
 .. py:data:: np, mask, crop
 
   Same as above.

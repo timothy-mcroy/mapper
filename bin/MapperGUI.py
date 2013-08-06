@@ -853,7 +853,7 @@ class MapperWorkerProcess:
             Mask = None
             try:
                 ldict = {'f' : self.Filter,
-                         # 'data' : self.InputDataPSI,
+                         'data' : self.InputDataPSI,
                          'mask' : Mask,
                          'np' : np,
                          'crop' : self.mapper.crop}
