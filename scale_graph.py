@@ -58,7 +58,7 @@ def do_scale_graph(M, weighting='inverse', exponent=0., maxcluster=None,
     Compute the scale graph from a Mapper output.
     '''
     M.add_info(cutoff="Scale graph algorithm ({0}, '{1}', {2})".\
-                   format(exponent, strategy, maxcluster))
+                   format(exponent, expand_intervals, maxcluster))
 
     sgd = M.scale_graph_data
     sgd.maxcluster = maxcluster
