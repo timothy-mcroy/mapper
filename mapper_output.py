@@ -30,7 +30,6 @@ from numpy import ndarray, intersect1d, zeros
 import scipy.sparse as scsp
 
 import numpy as np
-import networkx as nx
 
 from mapper.tools import dict_items, dict_values
 from mapper.draw_mapper_output import draw_2D, draw_scale_graph, save_scale_graph_as_pdf
@@ -416,25 +415,6 @@ class mapper_output:
             M = load(file)
         return M
 
-    def to_Graph(self):
-        '''
-        Convert the 1-skeleton of a L{mapper_output} to a networkx Graph. The
-        nodes are the original L{node} objects.
-
-        TBD vertices instead of nodes!
-
-        @rtype: C{networkx.Graph}
-        '''
-        G = nx.Graph()
-        for index, node in enumerate(self.nodes):
-          G.add_node(node, index=index)
-        G.add_edges_from([[self.nodes[v] for v in edge] +
-                          [{'weight':weight}]
-                          for edge, weight in dict_items(self.simplices[1])])
-        G.graph['info'] = self.info
-        G.graph['levelsets'] = self.levelsets
-        return G
-
     def to_simple_Graph(self):
         '''
         Convert the 1-skeleton of a L{mapper_output} to a networkx Graph. The
@@ -442,6 +422,7 @@ class mapper_output:
         No C{info} or C{levelset} dictionary, just the graph itself.
         @rtype: C{networkx.Graph}
         '''
+        import networkx as nx
         G = nx.Graph()
         G.add_nodes_from(self.simplices[0])
         G.add_weighted_edges_from([edge + (weight,) for edge, weight in \
@@ -620,27 +601,6 @@ class mapper_output:
                           nodes=nodes_by_expr_ids[0],
                           simplices=dict( [((u, v), 1.) for (u,v) in edges_by_expr_ids[0] ] ) )
         return M
-
-    # TBD: Remove this method?
-    def remove_outliers(self, maxsize=1, verbose=False):
-        '''
-        Remove outliers from the Mapper output. These are connected components
-        which consist of C{maxsize} or less data points.
-
-        @param maxsize: maximum size of connected components that should be
-        removed.
-        @type maxsize: integer
-        '''
-        G = self.to_simple_Graph()
-        Components = nx.algorithms.components.connected.connected_components(G)
-        if len(Components)==1: return
-        nodes_to_remove = set()
-        for component in Components:
-            nodelist = [point for node_idx in component for point in self.nodes[node_idx].points]
-            if len(set(nodelist))<=maxsize:
-                nodes_to_remove = nodes_to_remove.union(component)
-        if len(nodes_to_remove)>0:
-            self.remove_nodes(nodes_to_remove,verbose=verbose)
 
     # TBD: Remove this method?
     def remove_nodes(self, nodes, verbose=False):
@@ -1074,24 +1034,6 @@ class simpl_complex:
                 for v0, v1 in self[1]:
                     G.add_edge(G.vertex(node_to_vertex[v0]),
                                G.vertex(node_to_vertex[v1]))
-        return G, vertices
-
-    def to_nx_Graph(self):
-        '''
-        Convert the 1-skeleton of a simplicial complex to a networkx Graph.
-        No C{info} or C{levelset} dictionary, just the graph itself.
-        @rtype: C{networkx.Graph}
-        '''
-        G = nx.Graph()
-        if self.dimension<0:
-            vertices = np.empty(0, dtype=np.int)
-        else:
-            # tbd fromiter
-            vertices = np.ravel(np.array(list(self[0].keys()), dtype=np.int))
-            G.add_nodes_from(vertices)
-            if self.dimension>0:
-                G.add_weighted_edges_from([edge + (weight,) for edge, weight \
-                                               in dict_items(self[1])])
         return G, vertices
 
     def remove_small_simplices(self, minsizes):

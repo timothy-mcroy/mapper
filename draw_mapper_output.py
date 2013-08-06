@@ -35,7 +35,6 @@ if sys.hexversion < 0x03000000:
     range = xrange
 from mapper.tools import qhull, shortest_path, pdfwriter, graphviz_node_pos, dict_values
 
-import networkx as nx
 # More imports in the 3D section
 
 mplversion = [int(x) for x in mpl.__version__.split(' ')[0].split('.')[:2]]
@@ -133,7 +132,7 @@ def draw_2D(M, ax=None, node_labels=None, node_colors=None, legend=True, verbose
     if minsizes:
         S = S.remove_small_simplices(minsizes)
     vertices, vertex_pos = graphviz_node_pos(S, M.nodes)
-        
+
     vertices = np.array(vertices)
     vertex_pos = np.array(vertex_pos)
 
@@ -306,7 +305,7 @@ def draw_2D(M, ax=None, node_labels=None, node_colors=None, legend=True, verbose
                         color='w',
                         **textkwargs
                         )
-    
+
     # legend
     # This is subject to change!
     if legend:
@@ -479,8 +478,9 @@ def pygraphviz_layout_3D(G, prog='neato', root=None, args='-Gdim=3 -Nz=""'):
     @rtype: dictionary
     @return: Dictionary of M{(x,y,z)} positions keyed by node.
     '''
-    import networkx
-    A = networkx.to_agraph(G)
+    # todo: get rid of networkx
+    import networkx as nx
+    A = nx.to_agraph(G)
     if root is not None:
         args += "-Groot=%s" % root
     A.layout(prog=prog, args=args)
@@ -1108,10 +1108,10 @@ def save_scale_graph_as_pdf(sgd, filename, log_yaxis=False, maxvertices=None,
                     y = i * 10 ** e
                     if y <= bbox[1] or y >= bbox[3]: continue
                     path.moveto(xtransform(bbox[0]), ytransform(y))
-                    path.lineto(xtransform(bbox[0]) + 
+                    path.lineto(xtransform(bbox[0]) +
                                 2 * Tickwidth, ytransform(y))
                     path.moveto(xtransform(bbox[2]), ytransform(y))
-                    path.lineto(xtransform(bbox[2]) - 
+                    path.lineto(xtransform(bbox[2]) -
                                 2 * Tickwidth, ytransform(y))
         else:
             for y in np.arange(sy, bbox[3], dy):
