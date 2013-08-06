@@ -13,12 +13,13 @@ Python Mapper is distributed under the GPLv3 license. See the project home page
 
 for more information.
 '''
-__version__ = '0.1.4'
-__date__ = 'August 1, 2013'
+__version__ = '0.1.5'
+__date__ = 'August 5, 2013'
 
 import sys
 if sys.hexversion < 0x02060000:
   raise ImportError('Python Mapper requires at least Python version 2.6.')
+del sys
 
 def cmappertoolserror(name):
     def f(*args, **kwargs):

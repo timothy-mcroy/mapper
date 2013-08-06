@@ -19,6 +19,7 @@ Requirements
 * `NumPy <http://www.numpy.org/>`_ and `SciPy <http://www.scipy.org/>`_
 * `Matplotlib  <http://matplotlib.sourceforge.net/>`_
 * `Networkx <http://networkx.lanl.gov/>`_
+* `Graphviz <http://www.graphviz.org/>`_
 * Optionally cmappertools. Python Mapper will run without this module, but with limited functionality.
 
   -  cmappertools need the `Boost C++ libraries <http://www.boost.org/>`_.

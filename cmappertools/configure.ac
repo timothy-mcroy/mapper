@@ -6,7 +6,7 @@
 #     autoconf
 #
 AC_PREREQ(2.13)
-AC_INIT([cmappertools], [1.0.18])
+AC_INIT([cmappertools], [1.0.19])
 AC_CONFIG_HEADERS([config.h])
 AC_CONFIG_MACRO_DIR([m4])
 AM_PATH_PYTHON([2.7])

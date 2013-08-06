@@ -33,8 +33,7 @@ from itertools import combinations, count, product
 if sys.hexversion < 0x03000000:
     from itertools import izip as zip
     range = xrange
-from mapper.tools import qhull, shortest_path, pdfwriter, graphviz_node_pos, my_node_pos
-from mapper.mapper_output import dict_keys, dict_values, dict_items
+from mapper.tools import qhull, shortest_path, pdfwriter, graphviz_node_pos, dict_values
 
 import networkx as nx
 # More imports in the 3D section
@@ -133,10 +132,8 @@ def draw_2D(M, ax=None, node_labels=None, node_colors=None, legend=True, verbose
     S = M.simplices
     if minsizes:
         S = S.remove_small_simplices(minsizes)
-    # Caution: Not all nodes may be vertices!
-    #vertices, vertex_pos = graphviz_node_pos(M.nodes, S)
-    vertices, vertex_pos = my_node_pos(M.nodes, S)
-    
+    vertices, vertex_pos = graphviz_node_pos(S, M.nodes)
+        
     vertices = np.array(vertices)
     vertex_pos = np.array(vertex_pos)
 

@@ -31,7 +31,7 @@ Indices and tables
 
 Current release: |release|
 
-Quick download link: http://math.stanford.edu/~muellner/mapper/mapper.tar.gz
+Quick download link: http://danifold.net/mapper/mapper.tar.gz
 
 .. important::
    Python Mapper is still experimental. Please expect no stable features yet.

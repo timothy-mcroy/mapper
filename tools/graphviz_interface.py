@@ -16,15 +16,14 @@ for more information.
 '''
 Interface to graphviz
 '''
-from mapper.mapper_output import dict_keys, dict_values, dict_items
 import subprocess
 import sys
-# import re
+from mapper.tools import dict_items
 
-__all__ = ['graphviz_node_pos', 'my_node_pos']
+__all__ = ['graphviz_node_pos']
 
-def graphviz_node_pos(nodes, S):
-    D = dot_from_mapper_output(nodes, S)
+def graphviz_node_pos(S, nodes):
+    D = dot_from_mapper_output(S, nodes)
 
     P = dotparser(D)
     P.parse_graph()
@@ -37,283 +36,15 @@ def graphviz_node_pos(nodes, S):
     # N  = [n for n, x, y in nodepos]
     # P = [(x, y) for n, x, y in nodepos]
 
-def my_node_pos(nodes, S):
-    import numpy as np
-    nodes = np.array([n for n, in S[0]])
-    
-    invnodes = np.empty(np.max(nodes) + 1, dtype=np.int)
-    invnodes.fill(-1)
-    invnodes.put(*reversed(zip(*enumerate(nodes))))
-    
-    N = len(nodes)
-    
-    edges = np.array(S[1].keys())
-    edges = invnodes[edges]
-    del invnodes
-    
-        
-    np.random.seed(2)
-    pos = np.random.rand(N, 2) - .5
-    
-    el = sum([np.hypot(*(pos[ii] - pos[jj])) for ii, jj in edges]) / float(len(edges))
-    
-    print (el)
-    
-    pos /= el
-    
-    
-    import itertools
-    
-    
-    cc = .1
-    
-    def Phi(pos):
-        pos = pos.reshape((N,2))
-        p = 0;
-
-        for ii, jj in itertools.combinations(range(N), 2):
-            v = pos[ii] - pos[jj]
-            p -= np.log(np.dot(v, v))
-            
-        p *= cc
-               
-        for ii, jj in edges:
-            vn = np.hypot(*(pos[ii] - pos[jj])) - 1
-            p += vn * vn 
-        
-        return p
-    
-    def Phi_prime(pos):
-        pos = pos.reshape((N, 2))
-        grad = np.zeros((N, 2))
-    
-        for ii, jj in itertools.combinations(range(N), 2):
-
-            v = pos[ii] - pos[jj]
-            vn = np.dot(v, v)
-            dg = v / vn
-            
-            grad[ii] -= dg 
-            grad[jj] += dg
-                
-        grad *= cc
-        
-        for ii, jj in edges:
-            v = pos[ii] - pos[jj]
-            vn = np.hypot(*v)
-            dg = v / vn * (1 - vn)
-
-            grad[ii] -= dg
-            grad[jj] += dg
-            
-        return grad.ravel()
-    
-    import scipy.optimize
-    
-    sol = scipy.optimize.fmin_bfgs(Phi, pos.ravel(), Phi_prime)
-    pos = sol.reshape((N,2))
-    
-    import matplotlib as mpl
-    import matplotlib.pyplot as plt
-    
-
-    '''    
-    def Phi_i(pos, i, xx, yy):
-        pos2 = pos.copy()
-        
-        pos2[i] = (xx, yy)
-        return Phi(pos2)
-    import matplotlib.cm as cm
-    delta = 0.025
-    x = np.arange(-4.0, 4.0, delta)
-    y = np.arange(-4.0, 4.0, delta)
-    X, Y = np.meshgrid(x, y)
-    Z = np.zeros_like(X)
-    for jj, xx in enumerate(x):
-        for ii, yy in enumerate(y):
-            Z[ii, jj] = Phi_i(pos, 0, xx, yy)
-            
-
-    plt.imshow(-Z, interpolation='bilinear', origin='lower',
-            cmap=cm.jet, extent=(-4,4,-4,4))
-    plt.contour(X, Y, Z)
+def dot_from_mapper_output(S, nodes):
     '''
-    
+    Generate a dot file from Mapper output and process it with Graphviz.
     '''
-    plt.axis('equal')
-    edgecoor = [pos[e] for e in edges]
-    edgecoll = mpl.collections.LineCollection(segments=edgecoor)
-    plt.quiver(pos[:, 0], pos[:, 1], grad[:, 0], grad[:, 1], color='r')  # , width=.002, angles='xy', scale_units='xy', scale=1)
-    plt.gca().add_collection(edgecoll)
-    plt.scatter(pos[:, 0], pos[:, 1])
-    plt.show()
-    '''
-    
-    return nodes, pos
-    
-    
-    '''    
-    D = dot_from_mapper_output(nodes, S)
-
-    P = dotparser(D)
-    P.parse_graph()
-    return zip(*[(int(n), tuple(map(float, a['pos'].split(',')))) \
-                 for n, a in dict_items(P.nodes)])
-    '''
-
-    # nodes = re.findall(r'\{\s*node\s\[.*\];\s*([0-9]+)\s*\[(?:.|\s)*?pos="(.*),(.*)"(?:.|\s)*?\];\s*\}', out, re.MULTILINE)
-    # nodepos = re.findall(r'\{\s*(?:node\s\[.*?\];\s*)?([0-9]+)\s*\[.*?pos="(.*?),(.*?)".*?\];\s*\}', D, re.DOTALL)
-    # nodepos = [(int(n), float(x), float(y)) for n, x, y in nodepos]
-    # N  = [n for n, x, y in nodepos]
-    # P = [(x, y) for n, x, y in nodepos]
-
-def my_node_pos2(nodes, S):
-    import operator
-    import numpy as np
-    nodes = np.array([n for n, in S[0]])
-    
-    M = np.max(nodes) + 1
-    
-    
-    invnodes = np.empty(M, dtype=np.int)
-    invnodes.fill(-1)
-    
-    for i, n in enumerate(nodes):
-        invnodes[n] = i
-        
-    N = len(nodes)
-    
-    edges = np.array(S[1].keys())
-    
-    edges = invnodes[edges]
-    
-    np.random.seed(1)
-        
-    print(edges)
-    
-    pos = np.random.rand(N, 2)
-    print pos
-    
-    
-    import matplotlib as mpl
-    import matplotlib.pyplot as plt
-    
-    e1 = 3
-    e2 = 2
-    f2 = 20
-    
-    def Phi(pos):
-        p = 0;
-
-        for ii in range(N):
-            for jj in range(N):
-                if ii == jj: continue
-                
-                v = pos[ii] - pos[jj]
-                
-                
-                p += np.power(np.dot(v, v), -e1 / 2.0)
-                
-        for ii, jj in edges:
-            v = pos[ii] - pos[jj]
-    
-            p -= f2 * np.power(np.dot(v, v), -e2 / 2.0)
-            p -= f2 * np.power(np.dot(v, v), -e2 / 2.0)
-        
-        return p
-    
-    
-    for kk in range(130):
-    
-        grad = np.zeros((N, 2))
-    
-    
-        
-        for ii in range(N):
-            for jj in range(N):
-                if ii == jj: continue
-                
-                v = pos[ii] - pos[jj]
-                
-                
-                grad[ii] += e1 * v / np.power(np.dot(v, v), e1 / 2.0 + 1)
-                
-        
-        for ii, jj in edges:
-            v = pos[ii] - pos[jj]
-    
-            grad[ii] -= f2 * e2 * v / np.power(np.dot(v, v), e2 / 2.0 + 1)
-            grad[jj] += f2 * e2 * v / np.power(np.dot(v, v), e2 / 2.0 + 1)
-                
-        scale = np.max(np.abs(grad))
-        # grad = np.minimum(np.maximum(grad, -.1),.1)
-        grad = grad / scale / 2
-        
-        
-        p0 = Phi(pos)
-        p1 = Phi(pos + grad)
-        
-        while p1 > p0:
-            grad *= .9
-            p1 = Phi(pos + grad)
-            
-            print('half')
-
-        print p0, p1
-
-        '''
-        p2 = Phi(pos+2*grad)
-        while p2<p1:
-            print p1, p2
-            grad *= 2
-            p1 = Phi(pos+grad)
-            p2 = Phi(pos+2*grad)
-            print('double')
-        '''
-               
-        
-        edgecoor = [pos[e] for e in edges]
-        edgecoll = mpl.collections.LineCollection(segments=edgecoor)
-        plt.scatter(pos[:, 0], pos[:, 1])
-        plt.quiver(pos[:, 0], pos[:, 1], grad[:, 0], grad[:, 1], color='r', width=.002)
-        plt.gca().add_collection(edgecoll)
-        plt.show()
-
-        pos += grad
-        
-    print pos
-    print grad
-
-    plt.show()
-    
-    return nodes, pos
-    
-    
-    '''    
-    D = dot_from_mapper_output(nodes, S)
-
-    P = dotparser(D)
-    P.parse_graph()
-    return zip(*[(int(n), tuple(map(float, a['pos'].split(',')))) \
-                 for n, a in dict_items(P.nodes)])
-    '''
-
-    # nodes = re.findall(r'\{\s*node\s\[.*\];\s*([0-9]+)\s*\[(?:.|\s)*?pos="(.*),(.*)"(?:.|\s)*?\];\s*\}', out, re.MULTILINE)
-    # nodepos = re.findall(r'\{\s*(?:node\s\[.*?\];\s*)?([0-9]+)\s*\[.*?pos="(.*?),(.*?)".*?\];\s*\}', D, re.DOTALL)
-    # nodepos = [(int(n), float(x), float(y)) for n, x, y in nodepos]
-    # N  = [n for n, x, y in nodepos]
-    # P = [(x, y) for n, x, y in nodepos]
-
-def dot_from_mapper_output(nodes, S):
-
     if S.dimension < 0:
         return None
 
-    # todo avoid knots with edge weight
-
     graphvizcommand = 'neato'
     try:
-
         p = subprocess.Popen([graphvizcommand], stdout=subprocess.PIPE, stdin=subprocess.PIPE, stderr=subprocess.PIPE)
     except FileNotFoundError:
         sys.stderr.write('Error: Could not call "{0}". '
@@ -322,19 +53,16 @@ def dot_from_mapper_output(nodes, S):
         raise
 
     p.stdin.write('graph mapper_output { '
-                  # 'edge [length=.01];'
                   'node [ shape=circle, label="" ];'.encode('ascii')
                   )
     # Caution: Not all nodes may be vertices!
-    vertices = [n for n, in dict_keys(S[0])]
+    vertices = [n for n, in S[0]]
     vertices.sort()
 
-    f = [float(nodes[i].attribute) for i in vertices]
-    fmin, fmax = min(f), max(f)
+    #f = [float(nodes[i].attribute) for i in vertices]
+    #fmin, fmax = min(f), max(f)
 
     for i, n in enumerate(vertices):
-        # p.stdin.write('{{ node [ pos="{0},{1}" ] {2} }}'.format(1000.0*(f[i]-fmin)/(fmax-fmin), 500.0*i/float(len(vertices)), n).
-        #              encode('ascii'))
         p.stdin.write('{};'.format(n).encode('ascii'))
 
     if S.dimension > 0:
@@ -355,6 +83,8 @@ def dot_from_mapper_output(nodes, S):
 
 class dotparser:
     '''
+    See the dot language specification at
+    
     http://www.graphviz.org/doc/info/lang.html
     '''
     def __init__(self, D):

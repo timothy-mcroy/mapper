@@ -2404,12 +2404,12 @@ namespace conn_comp
     try
     {
       if (!(j_npy = reinterpret_cast<PyArrayObject *>(CMT_PyArray_FROMANY(j_py,
-          NPY_INT, 2, 2, NPY_ARRAY_CARRAY_RO))))
+          NPY_INT64, 2, 2, NPY_ARRAY_CARRAY_RO))))
       {
         return NULL;
       }
 
-      npy_int * j = reinterpret_cast<npy_int *>(PyArray_DATA(j_npy));
+      npy_int64 * j = reinterpret_cast<npy_int64 *>(PyArray_DATA(j_npy));
 
       if (PyArray_DIM(j_npy, 0) > NPY_MAX_INT
           || PyArray_DIM(j_npy, 1) > NPY_MAX_INT)
@@ -2512,7 +2512,7 @@ namespace nn_from_dm
   { // will be copied...
   public:
     npy_double d;
-    npy_int j;
+    npy_int64 j;
 
     bool
     operator<(const dist_idx& b) const
@@ -2529,34 +2529,34 @@ namespace nn_from_dm
   static void
   processrow(
       boost::exception_ptr & error,
-      npy_int ii,
-      npy_int * const iptr,
+      npy_int64 ii,
+      npy_int64 * const iptr,
       boost::mutex * mutex_i,
       npy_double const * const X,
       npy_intp const N,
       npy_intp const k,
       npy_double * const d,
-      npy_int * const j)
+      npy_int64 * const j)
   {
     try
     {
       auto_array_ptr<dist_idx> DJ(N);
       while (ii < N)
       {
-        for (npy_int jj = 0; jj < ii; ++jj)
+        for (npy_int64 jj = 0; jj < ii; ++jj)
         {
           DJ[jj].d = X_(jj,ii);
           DJ[jj].j = jj;
         }
         DJ[ii].d = 0;
         DJ[ii].j = ii;
-        for (npy_int jj = ii + 1; jj < N; ++jj)
+        for (npy_int64 jj = ii + 1; jj < N; ++jj)
         {
           DJ[jj].d = X_(ii,jj);
           DJ[jj].j = jj;
         }
         std::partial_sort(&DJ[0], &DJ[k], &DJ[N]);
-        for (npy_int jj = 0; jj < k; ++jj)
+        for (npy_int64 jj = 0; jj < k; ++jj)
         {
           d[ii * k + jj] = DJ[jj].d;
           j[ii * k + jj] = DJ[jj].j;
@@ -2637,11 +2637,12 @@ namespace nn_from_dm
       npy_double * const d = reinterpret_cast<npy_double *>(PyArray_DATA(d_npy));
       PyArrayObject * j_npy;
       if (!(j_npy = reinterpret_cast<PyArrayObject *>(CMT_PyArray_SimpleNew(2,
-          dims, NPY_INT))))
+          dims, NPY_INT64))))
       {
         return NULL;
       }
-      npy_int * const j = reinterpret_cast<npy_int *>(PyArray_DATA(j_npy));
+
+      npy_int64 * const j = reinterpret_cast<npy_int64 *>(PyArray_DATA(j_npy));
 
       PythonThreadSave = PyEval_SaveThread();
 
@@ -2652,22 +2653,22 @@ namespace nn_from_dm
       {
         auto_array_ptr<dist_idx> DJ(N);
 
-        for (npy_int ii = 0; ii < N; ++ii)
+        for (npy_int64 ii = 0; ii < N; ++ii)
         {
-          for (npy_int jj = 0; jj < ii; ++jj)
+          for (npy_int64 jj = 0; jj < ii; ++jj)
           {
             DJ[jj].d = X_(jj,ii);
             DJ[jj].j = jj;
           }
           DJ[ii].d = 0;
           DJ[ii].j = ii;
-          for (npy_int jj = ii + 1; jj < N; ++jj)
+          for (npy_int64 jj = ii + 1; jj < N; ++jj)
           {
             DJ[jj].d = X_(ii,jj);
             DJ[jj].j = jj;
           }
           std::partial_sort(&DJ[0], &DJ[k], &DJ[N]);
-          for (npy_int jj = 0; jj < k; ++jj)
+          for (npy_int64 jj = 0; jj < k; ++jj)
           {
             d[ii * k + jj] = DJ[jj].d;
             j[ii * k + jj] = DJ[jj].j;
@@ -2680,7 +2681,7 @@ namespace nn_from_dm
       {
         boost::mutex mutex_i;
         std::vector<boost::thread *> threads(nthreads);
-        npy_int row = static_cast<npy_int>(nthreads);
+        npy_int64 row = static_cast<npy_int64>(nthreads);
         std::vector<boost::exception_ptr> error(nthreads);
         for (unsigned int ii = 0; ii < nthreads; ++ii)
         {
@@ -2926,11 +2927,11 @@ namespace fcluster
         return NULL;
 
       if (!(rslt_npy = reinterpret_cast<PyArrayObject *>(CMT_PyArray_SimpleNew(
-          1, &N, NPY_INT))))
+          1, &N, NPY_INT64))))
       {
         return NULL;
       }
-      npy_int * const rslt = reinterpret_cast<npy_int *>(PyArray_DATA(rslt_npy));
+      npy_int64 * const rslt = reinterpret_cast<npy_int64 *>(PyArray_DATA(rslt_npy));
 
       if (num_clust == 1)
       {
@@ -2998,9 +2999,9 @@ namespace fcluster
         std::copy(clust + 0, clust + N, idx + 0);
         std::sort(idx + 0, idx + N);
         npy_intp const * const endidx = std::unique(idx + 0, idx + N);
-        auto_array_ptr<npy_int> idx2(2 * N - num_clust);
+        auto_array_ptr<npy_int64> idx2(2 * N - num_clust);
         {
-          npy_int ii = 0;
+          npy_int64 ii = 0;
           for (npy_intp const * idxptr = idx + 0; idxptr < endidx;
               ++idxptr, ++ii)
           {

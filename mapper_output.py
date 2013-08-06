@@ -23,14 +23,6 @@ if sys.hexversion < 0x03000000:
     from itertools import izip as zip
     range = xrange
 
-    dict_keys = dict.iterkeys
-    dict_values = dict.itervalues
-    dict_items = dict.iteritems
-else:
-    dict_keys = dict.keys
-    dict_values = dict.values
-    dict_items = dict.items
-
 from collections import defaultdict
 from pickle import load, dump
 from numpy import ndarray, intersect1d, zeros
@@ -40,6 +32,7 @@ import scipy.sparse as scsp
 import numpy as np
 import networkx as nx
 
+from mapper.tools import dict_items, dict_values
 from mapper.draw_mapper_output import draw_2D, draw_scale_graph, save_scale_graph_as_pdf
 
 # Make the database imports optional

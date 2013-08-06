@@ -2862,8 +2862,8 @@ class MyMetricPane(CollapsiblePane):
 
         NnghbrText = wx.StaticText(self.hbox2Panel,
                                         label='No. of nearest neighbors k ')
-        self.Nnghbrs = wx.SpinCtrl(self.hbox2Panel, value='2', size=(48, -1),
-                                   min=2, max=10000)
+        self.Nnghbrs = wx.SpinCtrl(self.hbox2Panel, value='1', size=(48, -1),
+                                   min=1, max=10000)
         EpsText = wx.StaticText(self.hbox2Panel, label=u'ε ')
         self.Eps = EpsCtrl(self.hbox2Panel)
 
@@ -5085,13 +5085,17 @@ class MapperGUI(wx.App):
 if __name__=='__main__':
     # Try to adjust the Python search path so that users do not need
     # to change it.
-    mapperpath = os.path.abspath(os.path.join(os.path.split(__file__)[0],
+    mapperpath = os.path.abspath(os.path.join(os.path.split(
+        os.path.realpath(__file__))[0],
         '..', '..'))
     if mapperpath not in sys.path:
         if os.path.isfile(os.path.join(mapperpath, 'mapper', '_mapper.py')):
             sys.path.append(mapperpath)
             print('Added ' + mapperpath + ' to the Python search path.')
         else:
+            print __file__
+            print mapperpath
+            print sys.path
             print('Warning: The Mapper package could not be found in its '
                   'expected place in ' + mapperpath + '.')
 
