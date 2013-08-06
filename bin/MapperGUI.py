@@ -1004,8 +1004,7 @@ class MapperWorkerProcess:
                                'Biggest gap 2' : \
                                    self.mapper.cutoff.variable_exp_gap2,
                                }
-            sg_choices = {'Scale graph algorithm'   : 1,
-                          'Scale graph algorithm 2' : 2, }
+            sg_choices = ('Scale graph algorithm',)
 
             if Cutoff in cutoff_choices:
                 cutoff = cutoff_choices[Cutoff](**Parameters)
@@ -1044,8 +1043,8 @@ class MapperWorkerProcess:
                            'Biggest gap' : 'mapper.cutoff.variable_exp_gap',
                            'Biggest gap 2' : 'mapper.cutoff.variable_exp_gap2',
                            }
-        sg_choices = {'Scale graph algorithm'   : 1,
-                      'Scale graph algorithm 2' : 2, }
+        sg_choices = ('Scale graph algorithm',)
+
         if Cutoff in cutoff_choices:
             SimpleOrNot = ', simple=True' if SimpleComplex else ''
             ret = ('cutoff = {0}({1})\n'
@@ -1058,11 +1057,10 @@ class MapperWorkerProcess:
            )
         elif Cutoff in sg_choices:
             ret = ('mapper.scale_graph(mapper_output, f, cover=cover,\n'
-                   '        {1})\n'
+                   '        {})\n'
                    '\n'
                    'mapper_output.draw_scale_graph()\n').\
-                   format(sg_choices[Cutoff],
-                          self.dict_to_str(Parameters))
+                   format(self.dict_to_str(Parameters))
         else:
             raise ValueError('Unknown cutoff strategy.')
         return ret + "plt.savefig('scale_graph.pdf')\n"
@@ -3502,12 +3500,10 @@ class CutoffPanel(ChoicePanel):
         ChoicesLabels = ('First gap', 'Histogram method',
                          'Biggest gap', 'Biggest gap 2',
                          'Scale graph algorithm',
-                         'Scale graph algorithm 2',
                          )
         ChoicesPanels = (FirstGapParPanel, HistogramMethodParPanel,
                           BiggestGapParPanel, BiggestGapParPanel,
-                          BiggestGapParPanel,
-                          MaxToMinExpPanel,
+                          ScaleGraphParPanel,
                           )
         ChoicePanel.__init__(self, parent, ChoicesLabels, ChoicesPanels,
                              label='Cutoff')
@@ -3519,7 +3515,7 @@ class CutoffPanel(ChoicePanel):
             self.ParameterPanels[self.Choices.GetSelection()].GetValue()
         return (Choice, Parameters, self.SimpleComplex)
 
-class MaxToMinExpPanel(wx.Panel):
+class ScaleGraphParPanel(wx.Panel):
     def __init__(self, parent):
         wx.Panel.__init__(self, parent)
         vbox = Vbox()
@@ -3545,15 +3541,12 @@ class MaxToMinExpPanel(wx.Panel):
                   flag=wx.ALIGN_CENTER_VERTICAL | wx.LEFT | wx.RIGHT,
                   border=BORDER)
 
-        hbox1.Add(wx.StaticText(self, label='Strategy'),
+
+        self.expand_intervals = \
+            wx.CheckBox(self, label='Expand intervals')
+        hbox1.Add(self.expand_intervals,
                   flag=wx.ALIGN_CENTER_VERTICAL | wx.LEFT | wx.RIGHT,
                   border=BORDER)
-
-        self.Strategy = wx.SpinCtrl(self, value='1',
-                                     size=(46, -1),
-                                     min=1, max=10)
-        hbox1.Add(self.Strategy,
-                  flag=wx.ALIGN_CENTER_VERTICAL | wx.RIGHT, border=BORDER)
 
         hbox1b = Hbox()
         vbox.AddSizer((0, BORDER))
@@ -3574,34 +3567,35 @@ class MaxToMinExpPanel(wx.Panel):
         vbox.Add(hbox2)
         hbox2.Add(wx.StaticText(self, label='f(x) ='),
                   flag=wx.ALIGN_CENTER_VERTICAL)
-        self.RB1 = wx.RadioButton(self, label='-x', style=wx.RB_GROUP)
+
+        self.RB1 = wx.RadioButton(self, label='1/x', style=wx.RB_GROUP)
         hbox2.Add(self.RB1)
         hbox2.AddSpacer((2 * BORDER, -1))
-        self.RB2 = wx.RadioButton(self, label='-(x^.5)')
+        self.RB2 = wx.RadioButton(self, label='-x')
         hbox2.Add(self.RB2)
         hbox2.AddSpacer((2 * BORDER, -1))
-        self.RB3 = wx.RadioButton(self, label='1/x')
+        self.RB3 = wx.RadioButton(self, label='-(x^.5)')
         hbox2.Add(self.RB3)
         hbox2.AddSpacer((2 * BORDER, -1))
         self.RB4 = wx.RadioButton(self, label='log(1/x)')
         hbox2.Add(self.RB4)
-        self.choices = { 'linear' : self.RB1,
-                         'root' : self.RB2,
-                         'inverse' : self.RB3,
+        self.choices = { 'inverse' : self.RB1,
+                         'linear' : self.RB2,
+                         'root' : self.RB3,
                          'log' : self.RB4 }
 
     def GetValue(self):
         if self.RB1.GetValue():
-            w = 'linear'
-        elif self.RB2.GetValue():
-            w = 'root'
-        elif self.RB3.GetValue():
             w = 'inverse'
+        elif self.RB2.GetValue():
+            w = 'linear'
+        elif self.RB3.GetValue():
+            w = 'root'
         else:
             w = 'log'
         return { 'exponent' : self.exponent.GetValue(),
                  'maxcluster' : self.maxcluster.GetValue(),
-                 'strategy' : self.Strategy.GetValue(),
+                 'expand_intervals' : self.expand_intervals.GetValue(),
                  'weighting' : w }
 
     GetAllValues = GetValue
@@ -3610,7 +3604,7 @@ class MaxToMinExpPanel(wx.Panel):
         self.exponent.SetValue(Config['exponent'])
         self.maxcluster.SetValue(Config['maxcluster'])
         self.choices[Config['weighting']].SetValue(True)
-        self.Strategy.SetValue(Config['strategy'])
+        self.expand_intervals.SetValue(Config['expand_intervals'])
 
 class FirstGapParPanel(wx.Panel):
     def __init__(self, parent):

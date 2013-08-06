@@ -53,7 +53,7 @@ def scale_graph(M, filt, cover=None, simple=False, **kwargs):
     M.complex_from_nodes(cover=cover, simple=simple)
 
 def do_scale_graph(M, weighting='inverse', exponent=0., maxcluster=None,
-                   strategy=1, verbose=True, callback=None):
+                   expand_intervals=False, verbose=True, callback=None):
     '''
     Compute the scale graph from a Mapper output.
     '''
@@ -62,15 +62,7 @@ def do_scale_graph(M, weighting='inverse', exponent=0., maxcluster=None,
 
     sgd = M.scale_graph_data
     sgd.maxcluster = maxcluster
-
-    if strategy==1:
-        sgd.expand_intervals = False
-    elif strategy==2:
-        sgd.expand_intervals = True
-    else:
-        raise ValueError("Scale graph strategy '{0}' is unknown.".\
-                             format(strategy))
-    sgd.strategy = strategy
+    sgd.expand_intervals = expand_intervals
 
     dendrogram = sgd.dendrogram
     diameter = sgd.diameter
