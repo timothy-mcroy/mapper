@@ -104,6 +104,13 @@ there are three ways to deal with the problem:
 
   With the last method, however, changes will be lost when Python Mapper is updated.
 
+Mixed tips
+----------
+
+.. toctree::
+
+   installation_tips_macos
+
 Compiling the documentation
 ---------------------------
 
