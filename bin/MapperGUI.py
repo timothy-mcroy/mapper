@@ -709,6 +709,8 @@ class MapperWorkerProcess:
                                   self.mapper.filters.Gauss_density,
                               'Graph Laplacian' : \
                                   self.mapper.filters.graph_Laplacian,
+                              'SVD' : \
+                                  self.mapper.filters.SVD,
                               'No filter' :
                                   self.mapper.filters.zero_filter,
                               }
@@ -769,6 +771,8 @@ class MapperWorkerProcess:
                               'Eccentricity' : 'mapper.filters.eccentricity',
                               'Density, Gaussian kernel' : \
                                   'mapper.filters.Gauss_density',
+                              'SVD' : \
+                                  'mapper.filters.SVD',
                               'Graph Laplacian' : \
                                   'mapper.filters.graph_Laplacian',
                               'No filter' : \
@@ -3142,10 +3146,11 @@ class MyDissimilarityFilterPanel(ChoicePanel):
         ChoicesLabels = ('Eccentricity', 'kNN distance',
                          'Distance to a measure',
                          'Density, Gaussian kernel', 'Graph Laplacian',
+                         'SVD',
                          'No filter')
         ChoicesPanels = (MetricExponentPanel, kNNFiltParPanel, kNNFiltParPanel,
                          GaussianDensParPanel, GraphLaplacianParPanel,
-                         NilPanel)
+                         SVDParPanel, NilPanel)
         ChoicePanel.__init__(self, parent, ChoicesLabels, ChoicesPanels)
 
     def GetValue(self):
@@ -3370,6 +3375,47 @@ class GraphLaplacianParPanel(wx.Panel):
         self.weighted_edges.SetValue(Config['weighted_edges'])
         self.sigma_eps.SetValue(Config['sigma_eps'])
         self.OnCheckBox(None)
+
+class SVDParPanel(wx.Panel):
+    def __init__(self, parent):
+        wx.Panel.__init__(self, parent)
+
+        vbox = Vbox()
+        self.SetSizer(vbox)
+
+        self.CenterCheckBox = \
+            wx.CheckBox(self, label='Mean-center distance matrix')
+        vbox.Add(self.CenterCheckBox,
+                 flag=wx.ALIGN_CENTER_VERTICAL, border=BORDER)
+
+        hbox = Hbox()
+        vbox.Add(hbox)
+
+        hbox.Add(wx.StaticText(self, label='Order of the eigenvector'),
+                 flag=wx.ALIGN_CENTER_VERTICAL)
+        hbox.AddSpacer((BORDER, 0))
+        self.Value = NumCtrl(self,
+                             value=0,
+                             size=(54, -1),
+                             style=wx.TE_RIGHT,
+                             integerWidth=5,
+                             fractionWidth=0,
+                             groupDigits=False,
+                             min=0,
+                             max=99999,
+                             )
+        self.Value.SetFont(self.GetFont())
+        hbox.Add(self.Value)
+
+    def GetValue(self):
+        return { 'order' : self.Value.GetValue(),
+                 'mean_center' : self.CenterCheckBox.GetValue() }
+
+    GetAllValues = GetValue
+
+    def SetValues(self, Config):
+        self.Value.SetValue(Config['order'])
+        self.CenterCheckBox.SetValue(Config['mean_center'])
 
 class DissimilarityFilterListCtrl(wx.ListCtrl):
     def __init__(self, parent):

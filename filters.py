@@ -276,6 +276,48 @@ Reference: Hao Zhang, Oliver van Kaick and Ramsay Dyer, *Spectral Mesh Processin
 
     return v[:,order[n]]
 
+def SVD(data, order=0, mean_center=True,
+        metricpar={}, callback=None, verbose=True,
+        **kwargs):
+    # comp can be an integer or a list of integers
+    # todo: check validity of comp
+    if data.ndim==1:
+        # dissimilarity matrix
+        assert metricpar=={}, ('No optional parameter is allowed for a '
+                               'dissimilarity matrix.')
+        D = data
+        N = n_obs(D)
+    else:
+        # vector data
+        D = pdist(data, **metricpar)
+        N = len(data)
+
+    DD = squareform(D)
+    del D
+
+    if mean_center:
+        md = DD.mean(axis=1)
+        DD -= md
+        DD -= (md-md.mean())[:,np.newaxis]
+
+    orderarray = np.atleast_1d(order)
+    assert orderarray.ndim == 1
+    k = 1 + orderarray.max()
+
+    if callback:
+        callback('Computing: SVD.')
+
+    if hasattr(spla, 'eigsh'):
+        w, v = spla.eigsh(DD, k=k, which='LM')
+    else: # for SciPy < 0.9.0
+        w, v = spla.eigen_symmetric(DD, k=k, which='LM')
+
+    sortedorder = np.argsort(np.abs(w))[::-1]
+    if verbose:
+        print('Eigenvalues:\n{}'.format(w[sortedorder]))
+
+    return v[:,sortedorder[order]]
+
 def zero_filter(data, **kwargs):
     r'''Return an array of the correct size filled with zeros.'''
     if data.ndim==1:
