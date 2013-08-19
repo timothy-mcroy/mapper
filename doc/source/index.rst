@@ -14,7 +14,7 @@ Mapper is an algorithm for exploration, analysis and visualization of data.
    :maxdepth: 2
 
    introduction
-   installation
+   installation/index
    quickstart
    input
    filters

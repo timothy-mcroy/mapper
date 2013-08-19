@@ -157,10 +157,10 @@
   <body>
     <div id="body">
 {%- block header %}
-      <div class="bg" style="background:url(_static/raster1.png) repeat">
-        <div class="bg" style="background:url(_static/gradient1.png); background-size:100% 100%"></div>
-        <div class="bg transparent" style="background:url(_static/raster2.png) repeat;">
-          <div class="bg" style="background:url(_static/gradient2.png); background-size:100% 100%;"></div>
+      <div class="bg" style="background:url({{ url_root }}_static/raster1.png) repeat">
+        <div class="bg" style="background:url({{ url_root }}_static/gradient1.png); background-size:100% 100%"></div>
+        <div class="bg transparent" style="background:url({{ url_root }}_static/raster2.png) repeat;">
+          <div class="bg" style="background:url({{ url_root }}_static/gradient2.png); background-size:100% 100%;"></div>
         </div>
       </div>
 {% endblock %}
