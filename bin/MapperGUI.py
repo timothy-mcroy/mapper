@@ -709,8 +709,8 @@ class MapperWorkerProcess:
                                   self.mapper.filters.Gauss_density,
                               'Graph Laplacian' : \
                                   self.mapper.filters.graph_Laplacian,
-                              'SVD' : \
-                                  self.mapper.filters.SVD,
+                              'Distance matrix eigenvector' : \
+                                  self.mapper.filters.dm_eigenvector,
                               'No filter' :
                                   self.mapper.filters.zero_filter,
                               }
@@ -771,8 +771,8 @@ class MapperWorkerProcess:
                               'Eccentricity' : 'mapper.filters.eccentricity',
                               'Density, Gaussian kernel' : \
                                   'mapper.filters.Gauss_density',
-                              'SVD' : \
-                                  'mapper.filters.SVD',
+                              'Distance matrix eigenvector' : \
+                                  'mapper.filters.dm_eigenvector',
                               'Graph Laplacian' : \
                                   'mapper.filters.graph_Laplacian',
                               'No filter' : \
@@ -3146,11 +3146,11 @@ class MyDissimilarityFilterPanel(ChoicePanel):
         ChoicesLabels = ('Eccentricity', 'kNN distance',
                          'Distance to a measure',
                          'Density, Gaussian kernel', 'Graph Laplacian',
-                         'SVD',
+                         'Distance matrix eigenvector',
                          'No filter')
         ChoicesPanels = (MetricExponentPanel, kNNFiltParPanel, kNNFiltParPanel,
                          GaussianDensParPanel, GraphLaplacianParPanel,
-                         SVDParPanel, NilPanel)
+                         DMEVParPanel, NilPanel)
         ChoicePanel.__init__(self, parent, ChoicesLabels, ChoicesPanels)
 
     def GetValue(self):
@@ -3376,7 +3376,7 @@ class GraphLaplacianParPanel(wx.Panel):
         self.sigma_eps.SetValue(Config['sigma_eps'])
         self.OnCheckBox(None)
 
-class SVDParPanel(wx.Panel):
+class DMEVParPanel(wx.Panel):
     def __init__(self, parent):
         wx.Panel.__init__(self, parent)
 
@@ -3408,13 +3408,13 @@ class SVDParPanel(wx.Panel):
         hbox.Add(self.Value)
 
     def GetValue(self):
-        return { 'order' : self.Value.GetValue(),
+        return { 'k' : self.Value.GetValue(),
                  'mean_center' : self.CenterCheckBox.GetValue() }
 
     GetAllValues = GetValue
 
     def SetValues(self, Config):
-        self.Value.SetValue(Config['order'])
+        self.Value.SetValue(Config['k'])
         self.CenterCheckBox.SetValue(Config['mean_center'])
 
 class DissimilarityFilterListCtrl(wx.ListCtrl):

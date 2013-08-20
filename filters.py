@@ -70,7 +70,8 @@ from mapper import n_obs, cmappertoolserror
 from mapper.tools import progressreporter
 
 __all__ = ['eccentricity', 'Gauss_density', 'kNN_distance',
-           'distance_to_measure', 'graph_Laplacian', 'zero_filter']
+           'distance_to_measure', 'graph_Laplacian', 'dm_eigenvector',
+           'zero_filter']
 
 def eccentricity(data, exponent=1.,  metricpar={}, callback=None):
     if data.ndim==1:
@@ -276,9 +277,14 @@ Reference: Hao Zhang, Oliver van Kaick and Ramsay Dyer, *Spectral Mesh Processin
 
     return v[:,order[n]]
 
-def SVD(data, order=0, mean_center=True,
-        metricpar={}, callback=None, verbose=True,
-        **kwargs):
+def dm_eigenvector(data, k=0, mean_center=True,
+        metricpar={}, verbose=True, callback=None):
+    r'''Return the :math:`k`-th eigenvector of the distance matrix.
+
+The matrix of pairwise distances is symmetric, so it has an orthonormal basis of eigenvectors. The parameter :math:`k` can be either an integer or an array of integers (for multi-dimensional filter functions). The index is zero-based, and eigenvalues are sorted by absolute value, so :math:`k=0` returns the eigenvector corresponding to the largest eigenvalue in magnitude.
+
+If `mean_center` is ``True``, the distance matrix is double-mean-centered before the eigenvalue decomposition.
+    '''
     # comp can be an integer or a list of integers
     # todo: check validity of comp
     if data.ndim==1:
@@ -300,23 +306,26 @@ def SVD(data, order=0, mean_center=True,
         DD -= md
         DD -= (md-md.mean())[:,np.newaxis]
 
-    orderarray = np.atleast_1d(order)
-    assert orderarray.ndim == 1
-    k = 1 + orderarray.max()
+    karray = np.atleast_1d(k)
+    assert karray.ndim == 1
+    maxk = 1 + karray.max()
 
     if callback:
-        callback('Computing: SVD.')
+        callback('Computing: distance matrix eigenvectors.')
 
     if hasattr(spla, 'eigsh'):
-        w, v = spla.eigsh(DD, k=k, which='LM')
+        w, v = spla.eigsh(DD, k=maxk, which='LM')
     else: # for SciPy < 0.9.0
-        w, v = spla.eigen_symmetric(DD, k=k, which='LM')
+        w, v = spla.eigen_symmetric(DD, k=maxk, which='LM')
 
     sortedorder = np.argsort(np.abs(w))[::-1]
     if verbose:
         print('Eigenvalues:\n{}'.format(w[sortedorder]))
 
-    return v[:,sortedorder[order]]
+    ret = v[:,sortedorder[k]]
+
+    # normalize
+    return ret / np.sqrt((ret*ret).sum(axis=0))
 
 def zero_filter(data, **kwargs):
     r'''Return an array of the correct size filled with zeros.'''
