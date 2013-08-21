@@ -1146,17 +1146,8 @@ class scale_graph_data:
                              self.H[::-1,:2].astype(np.int)]
 
             if self.expand_intervals:
-                if self.strategy==2:
-                    coeff = [float((a-b)*(a-b))/(a*b*(a+b))
-                             for a,b in nodesizes]
-                elif self.strategy==3:
-                    coeff = [float((a-b)*(a-b))/(a*b*self.N)
-                             for a,b in nodesizes]
-                elif self.strategy==4:
-                    coeff = [float(abs(a-b))/(a*b)
-                             for a,b in nodesizes]
-                else:
-                    raise ValueError
+                coeff = [float((a-b)*(a-b))/(a*b*(a+b))
+                         for a,b in nodesizes]
 
             self.H = np.hstack((diam, self.H[::-1,2], 0.))
             if np.any(np.diff(self.H)>0.):
