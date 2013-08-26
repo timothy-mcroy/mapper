@@ -1,5 +1,5 @@
-Installation tips: MacOS
-========================
+Installation tips: OS X
+=======================
 
 I collect tips from other users here. Check them out and see whether they apply to your situation. Comments are welcome. Let me know if something becomes outdated.
 

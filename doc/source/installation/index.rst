@@ -1,7 +1,7 @@
 Installation
 ============
 
-Python Mapper should be easy to install under Linux since all software packages it depends on are widely used and probably included in all major Linux distributions. In principle, Python Mapper does not contain any platform-specific code and depends only on cross-platform packages. Hence, there is no obvious reason why it should not be possible to run it on Mac OS and Microsoft Windows.
+Python Mapper should be easy to install under Linux since all software packages it depends on are widely used and probably included in all major Linux distributions. In principle, Python Mapper does not contain any platform-specific code and depends only on cross-platform packages. Hence, there is no obvious reason why it should not be possible to run it on OS X and Microsoft Windows.
 
 So far, installation has been tested under
 
