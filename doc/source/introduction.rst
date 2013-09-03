@@ -9,4 +9,4 @@ There is also a company, `Ayasdi <http://www.ayasdi.com>`_, which was founded by
 
 As much as Ayasdi covers the commercial uses of the Mapper algorithm with a polished and mature product, the authors of Python Mapper strive to provide the scientific community with a complete, extensible and fast toolchain. Since it is open source, it can be extended and modified by anyone with new ideas. The Python Mapper software also provides a graphical user interface, which hopefully makes it accessible to non-specialists and speeds up the workflow for beginners and experts alike.
 
-To get an idea about the Mapper algorithm, we recommend Gunnar Carlsson's paper “Topology and Data” [R4]_ and the original Mapper paper [R1]_.
+To get an idea about the Mapper algorithm, we recommend Gunnar Carlsson's paper “Topology and Data” [R5]_ and the original Mapper paper [R1]_.

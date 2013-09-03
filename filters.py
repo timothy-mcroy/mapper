@@ -164,7 +164,7 @@ def distance_to_measure(data, k, metricpar={}, callback=None):
 
 where :math:`\nu_1(x),\ldots,\nu_k(x)` are the :math:`k`  nearest neighbors of :math:`x` in the data set. Again, the first nearest neighbor is :math:`x` itself with distance 0.
 
-Reference: Frédéric Chazal, David Cohen-Steiner, Quentin Mérigot, *Geometric Inference for Measures based on Distance Functions*, INRIA Rapport de recherche 6930 Second version, 2010, http://hal.inria.fr/inria-00383685/.
+Reference: [R4]_.
 '''
     if data.ndim==1:
         assert metricpar=={}, ('No optional parameter is allowed for a '
@@ -225,7 +225,7 @@ def graph_Laplacian(data, eps, n=1, k=1, weighted_edges=False, sigma_eps=1.,
 
 The normalized variant seems to give consistently better results, so this is always chosen in the GUI. However, this experience is based on few examples only, so please do not hesitate to also try the non-normalized version if there is a reason for it.
 
-Reference: Hao Zhang, Oliver van Kaick and Ramsay Dyer, *Spectral Mesh Processing*, Computer Graphics Forum, vol. 29, n. 6, pp. 1865-1894, 2010, DOI `10.1111/j.1467-8659.2010.01655.x <http://dx.doi.org/10.1111/j.1467-8659.2010.01655.x>`_. See especially Section 6.3 for normalization.'''
+Reference: [R9]_; see especially Section 6.3 for normalization.'''
     assert n>=1, 'The rank of the eigenvector must be positive.'
     assert isinstance(k, int)
     assert k>=1
@@ -284,6 +284,8 @@ def dm_eigenvector(data, k=0, mean_center=True,
 The matrix of pairwise distances is symmetric, so it has an orthonormal basis of eigenvectors. The parameter :math:`k` can be either an integer or an array of integers (for multi-dimensional filter functions). The index is zero-based, and eigenvalues are sorted by absolute value, so :math:`k=0` returns the eigenvector corresponding to the largest eigenvalue in magnitude.
 
 If `mean_center` is ``True``, the distance matrix is double-mean-centered before the eigenvalue decomposition.
+
+Reference: [R6]_, subsection “Principal metric SVD filters”.
     '''
     # comp can be an integer or a list of integers
     # todo: check validity of comp
