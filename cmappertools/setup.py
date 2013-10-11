@@ -44,7 +44,7 @@ except:
     extra_link_args = ['-lboost_thread', '-lboost_chrono']
     with open('config.h', 'w') as f:
         f.write('/* Define to the version of this package. */\n'
-                '#define PACKAGE_VERSION "{}\n'.format(version))
+                '#define PACKAGE_VERSION "{}"\n'.format(version))
 
 setup(name='cmappertools',
       version=version,
