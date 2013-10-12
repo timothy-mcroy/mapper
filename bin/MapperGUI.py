@@ -53,12 +53,18 @@ class JobInterrupt:
     pass
 
 class ParameterError:
+    ShowErrorDialog = True
+
     def __init__(self, msg, parent):
         self.msg = msg
-        while not isinstance(parent, CollapsiblePane):
-            parent = parent.Parent
-        parent.Collapse(False)
-        ErrorDialog(parent, msg)
+        if ParameterError.ShowErrorDialog:
+            while not isinstance(parent, CollapsiblePane):
+                parent = parent.Parent
+            parent.Collapse(False)
+            ErrorDialog(parent, msg)
+
+    def __str__(self):
+        return self.msg
 
 WorkerProcess = None  # Global variable for the worker process. We need this
 # to stop the process in case an exception is raised before the main
@@ -1661,11 +1667,19 @@ class WxGLCanvas(glcanvas.GLCanvas):
             ErrorDialog(self, 'The OpenGL window cannot be initialized.')
             raise EnvironmentError()
 
+        # Manually post paint event to avoid initial blank gray canvas
+        wx.PostEvent(self,
+                     wx.PyCommandEvent(wx.EVT_PAINT.typeId, self.GetId()))
+
     def OnEraseBackground(self, event):
         '''Process the erase background event.'''
         pass  # Do nothing, to avoid flashing on MSWin
 
     def OnSize(self, event=None):
+        # For OS X
+        if self.GLContext:
+            self.SetCurrent(self.GLContext)
+
         w, h = self.GetClientSize()
         GL.glViewport(0, 0, w, h)
 
@@ -2736,6 +2750,8 @@ class NotebookDataChoice(wx.Notebook, StatusUpdate):
         size = self.CalcSizeFromPage(self.GetCurrentPage().GetMinSize())
         self.SetMinSize(size)
         # self.SetSize(size)
+        # For OS X
+        self.GetCurrentPage().Show(True)
         event.Skip()
 
     def OnNotebookPageChanged(self, event):
@@ -2852,6 +2868,8 @@ class MyMetricPane(CollapsiblePane):
 
         RB1 = wx.RadioButton(Pane, label='Ambient/original metric',
                              style=wx.RB_GROUP)
+        # For OS X
+        RB1.SetValue(True)
         PaneBox.Add(RB1, flag=wx.LEFT | wx.RIGHT, border=BORDER)
 
         self.RB2 = wx.RadioButton(Pane, label='Intrinsic metric')
@@ -2864,7 +2882,7 @@ class MyMetricPane(CollapsiblePane):
 
         NnghbrText = wx.StaticText(self.hbox2Panel,
                                         label='No. of nearest neighbors k ')
-        self.Nnghbrs = wx.SpinCtrl(self.hbox2Panel, value='1', size=(48, -1),
+        self.Nnghbrs = wx.SpinCtrl(self.hbox2Panel, value='1', size=(50, -1),
                                    min=1, max=10000)
         EpsText = wx.StaticText(self.hbox2Panel, label=u'ε ')
         self.Eps = EpsCtrl(self.hbox2Panel)
@@ -3130,8 +3148,8 @@ class MyVectorFilterPanel(ChoicePanel):
 class NilPanel(wx.Panel):
     def __init__(self, parent):
         wx.Panel.__init__(self, parent)
-        self.SetMinSize((0, 0))
-        self.AcceptsFocus()
+        # Minimum height 22: hack for OS X
+        self.SetMinSize((0, 22))
 
     def GetValue(self):
         return {}
@@ -3140,6 +3158,9 @@ class NilPanel(wx.Panel):
 
     def SetValues(self, Config):
         pass
+
+    def AcceptsFocus(self):
+        return False
 
 class MyDissimilarityFilterPanel(ChoicePanel):
     def __init__(self, parent):
@@ -3289,7 +3310,7 @@ class GraphLaplacianParPanel(wx.Panel):
         box.Add(wx.StaticText(self, label='Order of the eigenvector'),
                  flag=wx.ALIGN_CENTER_VERTICAL)
 
-        self.eigenvec = wx.SpinCtrl(self, value='1', size=(48, -1),
+        self.eigenvec = wx.SpinCtrl(self, value='1', size=(50, -1),
                                     min=1, max=1000)
         box.Add(self.eigenvec)
 
@@ -3615,6 +3636,8 @@ class ScaleGraphParPanel(wx.Panel):
                   flag=wx.ALIGN_CENTER_VERTICAL)
 
         self.RB1 = wx.RadioButton(self, label='1/x', style=wx.RB_GROUP)
+        # For OS X
+        self.RB1.SetValue(True)
         hbox2.Add(self.RB1)
         hbox2.AddSpacer((2 * BORDER, -1))
         self.RB2 = wx.RadioButton(self, label='-x')
@@ -3767,7 +3790,7 @@ class Uniform1dCoverPanel(wx.Panel):
                   flag=wx.ALIGN_CENTER_VERTICAL)
         hbox.AddSpacer((BORDER, 0))
         self.Intervals = wx.SpinCtrl(self, value='15',
-                                     size=(45, -1),
+                                     size=(50, -1),
                                      min=1, max=999)
         hbox.Add(self.Intervals, flag=wx.ALIGN_CENTER_VERTICAL)
         hbox.AddSpacer((2 * BORDER, 0))
@@ -5040,18 +5063,20 @@ class MainFrame(wx.Frame, StatusUpdate):
         self.SetMinSize(newsize)
 
     def SaveConfig(self):
-        Config = self.Panel.GetAllValues()
+        ParameterError.ShowErrorDialog = False
         try:
+            Config = self.Panel.GetAllValues()
             with open('gui_config.json', 'w') as f:
                 json.dump(Config, f)
-        except IOError as e:
-            print('-----------------------------------------------------\n'
-                  'Warning: The configuration file could not be written.\n'
-                  '{0}\n'
-                  '-----------------------------------------------------'.\
-                      format(str(e)))
-            traceback.print_exc(None, sys.stderr)
-
+        except (ParameterError, IOError) as e:
+            print(u'-----------------------------------------------------\n'
+                  u'Warning: The configuration file could not be written.\n'
+                  u'{0}\n'
+                  u'-----------------------------------------------------'.\
+                      format(unicode(e)))
+            if not isinstance(e, ParameterError):
+                traceback.print_exc(None, sys.stderr)
+        ParameterError.ShowErrorDialog = True
 
     def LoadConfig(self, event=None, path='gui_config.json'):
         try:
@@ -5070,9 +5095,9 @@ class MainFrame(wx.Frame, StatusUpdate):
                         "In any case, the Mapper GUI is fully usable, only "
                         "the last used parameters are lost.")
             return e
-        # except (IOError, ValueError) as e:
-        except Exception as e:
-            traceback.print_exc(None, sys.stderr)
+        except (IOError, ValueError) as e:
+            print("No valid configuration file found. "
+                  "Use default configuration.")
             self.SetStatusText('Default configuration.')
             return e
 
