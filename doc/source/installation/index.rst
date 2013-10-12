@@ -109,7 +109,7 @@ Mixed tips
 
 .. toctree::
 
-   installation_tips_macos
+   installation_tips_osx
 
 Compiling the documentation
 ---------------------------
