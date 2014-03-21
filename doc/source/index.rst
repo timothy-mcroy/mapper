@@ -36,4 +36,4 @@ Quick download link: http://danifold.net/mapper/mapper.tar.gz
 .. important::
    Python Mapper is still experimental. Please expect no stable features yet.
 
-   Please report bugs to `Daniel Müllner <mailto:muellner@math.stanford.edu>`_. I am sure that there are dozens of tiny lapses that can be easily repaired, among more serious bugs, of course.
+   Please report bugs to `Daniel Müllner <mailto:daniel@danifold.net>`_. I am sure that there are dozens of tiny lapses that can be easily repaired, among more serious bugs, of course.

@@ -46,7 +46,7 @@ master_doc = 'index'
 
 # General information about the project.
 project = u'Python Mapper'
-copyright = u'2013, Daniel Müllner and Aravindakshan Babu'
+copyright = u'2011–2014, Daniel Müllner and Aravindakshan Babu'
 
 try:
     import mapper

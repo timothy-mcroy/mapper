@@ -4,13 +4,13 @@
 This file is part of the Python Mapper package, an open source tool
 for exploration, analysis and visualization of data.
 
-Copyright 2011–2013 by the authors:
-    Daniel Müllner, http://math.stanford.edu/~muellner
+Copyright 2011–2014 by the authors:
+    Daniel Müllner, http://danifold.net
     Aravindakshan Babu, anounceofpractice@hotmail.com
 
 Python Mapper is distributed under the GPLv3 license. See the project home page
 
-    http://math.stanford.edu/~muellner/mapper
+    http://danifold.net/mapper
 
 for more information.
 
@@ -218,7 +218,7 @@ class OnePagePdf(containsXObjectReferences, containsExtGStateReferences,
 
         if creator is None:
             self._creator = asciiOrUtf16(
-                self._appname + 
+                self._appname +
                 u" (© Daniel Müllner and Aravindakshan Babu)")
         else:
             self._creator = asciiOrUtf16(creator)

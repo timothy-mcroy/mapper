@@ -3,18 +3,18 @@
 This file is part of the Python Mapper package, an open source tool
 for exploration, analysis and visualization of data.
 
-Copyright 2011–2013 by the authors:
-    Daniel Müllner, http://math.stanford.edu/~muellner
+Copyright 2011–2014 by the authors:
+    Daniel Müllner, http://danifold.net
     Aravindakshan Babu, anounceofpractice@hotmail.com
 
 Python Mapper is distributed under the GPLv3 license. See the project home page
 
-    http://math.stanford.edu/~muellner/mapper
+    http://danifold.net/mapper
 
 for more information.
 '''
-__version__ = '0.1.5'
-__date__ = 'August 5, 2013'
+__version__ = '0.1.6'
+__date__ = 'March 21, 2014'
 
 import sys
 if sys.hexversion < 0x02060000:

@@ -11,8 +11,7 @@ else:
 u('''
   cmappertools: Tools for the Python Mapper in C++
 
-  Copyright © 2012 Daniel Müllner
-  <http://www.danifold.net>
+  Copyright © 2011–2014 Daniel Müllner <http://www.danifold.net>
 ''')
 #import distutils.debug
 #distutils.debug.DEBUG = 'yes'
@@ -69,7 +68,7 @@ setup(name='cmappertools',
                              )],
       keywords=['Mapper'],
       author=u("Daniel Müllner"),
-      author_email="muellner@math.stanford.edu",
+      author_email="daniel@danifold.net",
       license="GPLv3 <http://www.gnu.org/licenses/gpl.html>",
       classifiers = [
         "Topic :: Scientific/Engineering :: Information Analysis",
@@ -86,5 +85,5 @@ setup(name='cmappertools',
         "Development Status :: 4 - Beta",
         #"Development Status :: 5 - Production/Stable"
         ],
-      url = 'http://math.stanford.edu/~muellner',
+      url = 'http://danifold.net',
       )

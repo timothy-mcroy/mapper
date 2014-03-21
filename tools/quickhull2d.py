@@ -24,7 +24,7 @@
 #
 # Retrieved from: http://en.literateprograms.org/Quickhull_(Python,_arrays)?oldid=16555
 #
-# Modified 2011 by Daniel Müllner, http://math.stanford.edu/~muellner
+# Modified 2011 by Daniel Müllner, http://danifold.net
 
 from numpy import *
 

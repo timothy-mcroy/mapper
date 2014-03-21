@@ -1,7 +1,7 @@
 /*
   Compressed sparse row graph structure for use with boost::graph.
 
-  Copyright 2012–2013 Daniel Müllner, http://math.stanford.edu/~muellner
+  Copyright 2011–2014 Daniel Müllner, http://danifold.net
 
   This file is derived from the C++ header file
       compressed_sparse_row_graph.hpp
@@ -29,7 +29,7 @@
   for exploration, analysis and visualization of data. Python Mapper is
   distributed under the GPLv3 license. See the project home page
 
-    http://math.stanford.edu/~muellner/mapper
+    http://danifold.net/mapper
 
   for more information.
 */

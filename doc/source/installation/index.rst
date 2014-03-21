@@ -40,7 +40,7 @@ Highly recommended:
     cd cmappertools
     python setup.py install --user
 
-* `fastcluster <http://math.stanford.edu/~muellner/fastcluster.html>`_
+* `fastcluster <http://danifold.net/fastcluster.html>`_
 
 Download
 --------
@@ -49,11 +49,11 @@ The source distribution of Python Mapper can be downloaded here:
 
 .. admonition:: Download link for Python Mapper
 
-   http://math.stanford.edu/~muellner/mapper/mapper.tar.gz
+   http://danifold.net/mapper/mapper.tar.gz
 
 Since Python Mapper is not stable yet and under active development, the distribution will be updated frequently. If you want to follow updates more easily and avoid to install the same package over and over again, it is recommended to use our `Mercurial <http://mercurial.selenic.com/>`_ repository. Create a local copy of the repository with::
 
-  hg clone http://math.stanford.edu/~muellner/hg/mapper
+  hg clone http://danifold.net/hg/mapper
 
 To update the repository, type::
 

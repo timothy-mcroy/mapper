@@ -31,7 +31,7 @@ To cite the original Mapper algorithm:
 
 To cite the Python Mapper software:
 
-.. [R2]  Daniel Müllner and Aravindakshan Babu, *Python Mapper: An open-source toolchain for data exploration, analysis and visualization*, 2013, URL http://math.stanford.edu/~muellner/mapper
+.. [R2]  Daniel Müllner and Aravindakshan Babu, *Python Mapper: An open-source toolchain for data exploration, analysis and visualization*, 2013, URL http://danifold.net/mapper
 
 To cite the scale graph algorithm:
 

@@ -1,7 +1,7 @@
 Python Mapper
 
-Copyright 2011–2013
-    Daniel Müllner, http://math.stanford.edu/~muellner
+Copyright 2011–2014
+    Daniel Müllner, http://danifold.net
     Aravindakshan Babu, anounceofpractice@hotmail.com
 
 Version history
@@ -29,3 +29,8 @@ Version 0.1.4 08/01/2013:
 Version 0.1.5 08/05/2013:
 
   • Dependency on pygraphivz removed.
+
+Version 0.1.6 03/21/2014:
+
+  • Minor fixes and updates
+

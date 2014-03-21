@@ -3,13 +3,13 @@
 This file is part of the Python Mapper package, an open source tool
 for exploration, analysis and visualization of data.
 
-Copyright 2011–2013 by the authors:
-    Daniel Müllner, http://math.stanford.edu/~muellner
+Copyright 2011–2014 by the authors:
+    Daniel Müllner, http://danifold.net
     Aravindakshan Babu, anounceofpractice@hotmail.com
 
 Python Mapper is distributed under the GPLv3 license. See the project home page
 
-    http://math.stanford.edu/~muellner/mapper
+    http://danifold.net/mapper
 
 for more information.
 '''
@@ -88,7 +88,7 @@ def dot_from_mapper_output(S, nodes):
 class dotparser:
     '''
     See the dot language specification at
-    
+
     http://www.graphviz.org/doc/info/lang.html
     '''
     def __init__(self, D):
@@ -115,7 +115,7 @@ class dotparser:
 
     def parse_graph(self):
         # print(self.D)
-        
+
         self.getnexttoken()
 
         if self.tc == dotparser.ALPH and self.t.lower() == 'strict':
@@ -160,7 +160,7 @@ class dotparser:
                 self.parse_edge_stmt() or \
                 self.parse_node_stmt() or \
                 self.parse_id_assignment()[0])
-        
+
     def parse_attr_stmt(self):
         if self.tc == dotparser.ALPH and self.t.lower() in ('graph', 'node', 'edge'):
             self.tsave()
@@ -179,7 +179,7 @@ class dotparser:
         is_attr_list, attr = self.parse_attr_list_()
         if not is_attr_list:
             return False, None
-        
+
         while is_attr_list:
             for k in attr:
                 if k in attrlist:
@@ -195,7 +195,7 @@ class dotparser:
 
         self.tsave()
         self.getnexttoken()
-        
+
         is_a_list, a_list = self.parse_a_list()
 
         if not is_a_list or self.t != dotparser.SQUARECLOSE:
@@ -225,7 +225,7 @@ class dotparser:
 
     def parse_id_assignment(self):
         self.tsave()
-        
+
         is_id, id1 = self.parse_id()
 
         if not is_id or self.tc != dotparser.EQUALSIGN:
@@ -281,11 +281,11 @@ class dotparser:
         is_node_id, node_id = self.parse_node_id()
         if not is_node_id:
             return False
-        
+
         if node_id in self.nodes:
             raise KeyError('duplicate node id')
-        
-        
+
+
         dummy, attr_list = self.parse_attr_list()
         self.nodes[node_id] = attr_list
         return True
@@ -361,7 +361,7 @@ class dotparser:
             (self.D[self.pos] in ' \t\n\r\f\v' or \
              (self.D[self.pos] == '\\' and self.pos < self.len - 1 and self.D[self.pos] == '\n')):
             self.pos += 1
-            
+
         if self.pos < self.len and self.D[self.pos] == '/':
             raise RuntimeError('not implemented yet')
 
@@ -376,7 +376,7 @@ class dotparser:
             self.tc = dotparser.EOF
             self.t = None
             return
-        
+
         c = self.getchar()
 
         if c in '{}[];:,=':
@@ -401,7 +401,7 @@ class dotparser:
         c = self.D[self.pos]
         self.pos += 1
         return c
-        
+
 
     def getsimpleid(self, c):
         self.tc = dotparser.ALPH
@@ -411,7 +411,7 @@ class dotparser:
             if self.pos == self.len:
                 return
             c = self.getchar()
-            
+
         self.pos -= 1
 
 
@@ -435,13 +435,13 @@ class dotparser:
         if c == '-':
             self.t = c
             c = self.getchar()
-                            
+
             if c in ('-', '>'):
                 self.t += c
                 self.tc = dotparser.EDGERHS
                 return
-            
-        self.tc = dotparser.NUMBER 
+
+        self.tc = dotparser.NUMBER
 
         digits = False
         while c >= '0' and c <= '9':
@@ -462,9 +462,9 @@ class dotparser:
                 if self.pos == self.len:
                     return
                 c = self.getchar()
-                
+
         self.pos -= 1
-        
+
     def gethtmlid(self, c):
         raise RuntimeError('HTML IDs are not implemented yet')
 
