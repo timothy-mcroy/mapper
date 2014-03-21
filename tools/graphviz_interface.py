@@ -45,8 +45,12 @@ def dot_from_mapper_output(S, nodes):
 
     graphvizcommand = 'neato'
     try:
+        exception_to_catch = FileNotFoundError
+    except NameError:
+        exception_to_catch = OSError
+    try:
         p = subprocess.Popen([graphvizcommand], stdout=subprocess.PIPE, stdin=subprocess.PIPE, stderr=subprocess.PIPE)
-    except FileNotFoundError:
+    except exception_to_catch:
         sys.stderr.write('Error: Could not call "{0}". '
                          'Make sure that graphviz is installed and that {0} is in the search path.\n'.
                          format(graphvizcommand))

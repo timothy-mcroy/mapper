@@ -18,7 +18,7 @@ AC_PROG_CXX
 AC_LANG(C++)
 
 AX_BOOST_BASE([1.47], [],
-[echo 'Warning: Path to Boost libraries was not found. Try setting the BOOST_ROOT environment variable.'])
+[echo 'Warning: Path to Boost libraries was not found. Please install Boost, or try setting the BOOST_ROOT environment variable if Boost is already installed and the script could not find it.'; exit 1])
 
 AX_BOOST_THREAD
 

@@ -38,6 +38,12 @@ try:
         with open('extra_link_args.txt', 'r') as f:
             extra_link_args = f.read().strip().split()
             print("Extra link args: {0}".format(extra_link_args))
+    else:
+        print('The "configure" script did not run as expected. Please parse the '
+              'terminal output for errors. The setup script will continue and '
+              'try to guess values for compiler arguments, but this might not '
+              'work in all cases.')
+        raise RuntimeError
 except:
     '''If this does not work, guess.'''
     extra_compile_args = ['-pthread']

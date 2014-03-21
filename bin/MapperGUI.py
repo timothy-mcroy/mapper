@@ -793,16 +793,16 @@ class MapperWorkerProcess:
                 return ('\n'
                         'metricpar = {0}\n'
                         'f = {1}(mapperinputdata,\n'
-                        'metricpar=metricpar,\n'
-                        '{2})\n').\
+                        '    metricpar=metricpar,\n'
+                        '    {2})\n').\
                         format(metricpar, vector_filters[Filterfn],
                                self.dict_to_str(Parameters))
             elif Filterfn in universal_filters:
                 return ('\n'
                         'metricpar = {0}\n'
                         'f = {1}(mapperinputdata,\n'
-                        'metricpar=metricpar,\n'
-                        '{2})\n').\
+                        '    metricpar=metricpar,\n'
+                        '    {2})\n').\
                         format(metricpar, universal_filters[Filterfn],
                                self.dict_to_str(Parameters))
             elif Filterfn in dm_filters:
@@ -1093,7 +1093,7 @@ class MapperWorkerProcess:
         script += self.Script_Cutoff(**kwargs)
         script += ("\n"
                    "minsizes = {0}\n"
-                   "plt.gca().cla()\n"
+                   #"plt.gca().cla()\n"
                    "mapper_output.draw_2D(minsizes=minsizes)\n"
                    "plt.savefig('mapper_output.pdf')\n"
                    "\n"
