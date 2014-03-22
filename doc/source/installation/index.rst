@@ -6,7 +6,8 @@ Python Mapper should be easy to install under Linux since all software packages 
 So far, installation has been tested under
 
 * Arch Linux
-* OS X Mountain Lion
+* Ubuntu (see also here: :doc:`installation_tips_ubuntu`)
+* OS X Mountain Lion (see also here: :doc:`installation_tips_osx`)
 
 If you install Python Mapper on a certain platform not in the list above, please let me (`Daniel <http://danifold.net>`_) know so that I can extend the list. Especially if you needed to tweak or modify something, I am interested to know about it.
 
@@ -22,9 +23,6 @@ Requirements
 * Optionally cmappertools. Python Mapper will run without this module, but with limited functionality.
 
   -  cmappertools need the `Boost C++ libraries <http://www.boost.org/>`_.
-
-
-
 
 For the GUI:
 
@@ -110,6 +108,7 @@ Mixed tips
 .. toctree::
 
    installation_tips_osx
+   installation_tips_ubuntu
 
 Compiling the documentation
 ---------------------------
