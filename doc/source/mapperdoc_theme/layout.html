@@ -155,16 +155,8 @@
 {%- block extrahead %} {% endblock %}
   </head>
   <body>
-    <div id="body">
-{%- block header %}
-      <div class="bg" style="background:url({{ url_root }}_static/raster1.png) repeat">
-        <div class="bg" style="background:url({{ url_root }}_static/gradient1.png); background-size:100% 100%"></div>
-        <div class="bg transparent" style="background:url({{ url_root }}_static/raster2.png) repeat;">
-          <div class="bg" style="background:url({{ url_root }}_static/gradient2.png); background-size:100% 100%;"></div>
-        </div>
-      </div>
-{% endblock %}
-
+    <div id="body" style="background:url({{ pathto('_static/bg.svg', 1) }})">
+{%- block header %} {% endblock %}
       <div id="main">
 {%- block content %}
         <table id="bodytable">
