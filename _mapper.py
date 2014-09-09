@@ -222,28 +222,42 @@ def mapper(pcd, filt, cover, cutoff,
     '''
     Mapper algorithm
 
-    @param pcd: input data, point cloud in M{R^n}, or compressed distance
-    matrix
-    @type pcd: C{numpy.ndarray((N,n), dtype=float)} or
-    C{numpy.ndarray((N*(N-1)/2), dtype=float)}
-    @param filt: filter function with M{comp} components
-    @type filt: C{numpy.ndarray((N, comp), dtype=float)} or C{numpy.ndarray(N,
-    dtype=float)}
-    @param cover: Class for the cover of the filter range. See L{covers}..
-    @type cover: iterator
-    @param cutoff: Cutoff function for the partial clustering tree. See
-    L{cluster_cutoff}.
-    @type cutoff: function or C{None}
-    @param cluster: Clustering function.
-    @type cluster: See L{single_linkage}
-    @param point_labels: Labels for the input points (optional). If this is
-    None, the points are labeled 0,1,...,N-1.
-    @type point_labels: C{numpy.ndarray(N)}
-    @param verbose: Print status message?
-    @type verbose: bool
+    :param pcd: input data, point cloud in  :math:`R^n`, or compressed distance
+        matrix for *N* points
+    :type pcd: ``numpy.ndarray((N,n), dtype=float)`` or
+        ``numpy.ndarray((N*(N-1)/2), dtype=float)``
+    :param filt: filter function with *comp* components
+    :type filt: ``numpy.ndarray((N, comp), dtype=float)`` or
+        ``numpy.ndarray(N, dtype=float)``
+    :param cover: Class for the cover of the filter range. See :ref:`section:cover`.
+    :type cover: iterator
+    :param cutoff: Cutoff function for the partial clustering tree. See
+        :ref:`section:cluster_cutoff`.
+    :type cutoff: function or ``None``
+    :param mask: (Mainly for the GUI) A mask to choose a subset of the input points
+    :type mask: Anything that can be used for `indexing of NumPy arrays
+        <http://docs.scipy.org/doc/numpy/reference/arrays.indexing.html>`_, e.g. a Boolean
+        array of size *N*.
+    :param cluster: Clustering function.
+    :type cluster: See :ref:`section:clustering_function`
+    :param point_labels: Labels for the input points (optional). If this is
+        None, the points are labeled 0,1,...,N−1.
+    :type point_labels: ``numpy.ndarray(N)``
+    :param metricpar: If the input data is in vector form, these are the parameters
+        that are given to the ``scipy.spatial.distance.pdist`` function. If the input data
+        is a compressed distance matrix, this argument is ignored.
+    :type metricpar: dict
+    :param simple: (to be documented by example) If ``True``, then intersections are only
+        considered for adjacent cover patches in the 1-dimensional variant. In particular,
+        the output simplicial complex is a graph without higher-dimensional simplices.
+    :type simple: bool
+    :param filter_info: (For the GUI) Filter info to be stored in the output
+    :type filter_info:
+    :param verbose: Print status message?
+    :type verbose: bool
 
-    @return: Mapper output data structure
-    @rtype: mapper_output
+    :return: Mapper output data structure
+    :rtype: ``mapper_output`` instance
     '''
     # input checks
     assert isinstance(pcd, np.ndarray)
