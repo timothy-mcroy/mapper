@@ -40,6 +40,22 @@ Highly recommended:
 
 * `fastcluster <http://danifold.net/fastcluster.html>`_
 
+  This is Daniel Müllner's C++ library for fast hierarchical clustering, again wrapped as a Python module. If one of the methods below work, this is the quickest way to install fastcluster. Otherwise, please refer to the `detailed installation instructions <http://cran.r-project.org/web/packages/fastcluster/INSTALL>`_ in the fastcluster distribution. You need the Python interface; the R interface can be ignored.
+
+  Method 1::
+
+    easy_install --upgrade --user fastcluster
+
+  Method 2::
+
+    wget https://pypi.python.org/packages/source/f/fastcluster/fastcluster-1.1.13.tar.gz
+    tar -xf fastcluster-1.1.13.tar.gz
+    cd fastcluster-1.1.13
+    python setup.py install --user
+    cd ..
+    rm fastcluster-1.1.13.tar.gz
+    rm -r fastcluster-1.1.13/
+
 Download
 --------
 

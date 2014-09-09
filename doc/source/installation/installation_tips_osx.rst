@@ -18,3 +18,7 @@ where ``[MYENV]`` is the name of the environment.”
 .. rubric::  On July 16, 2013:
 
 “fastcluster can be installed with `pip <https://pypi.python.org/pypi/pip>`_, which some might prefer for its uninstall capability.”
+
+.. rubric:: On August 20, 2014:
+
+“I found this page to be really useful for installing wxPython in a virtual env:  http://wiki.wxpython.org/wxPythonVirtualenvOnMac.”

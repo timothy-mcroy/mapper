@@ -19,7 +19,9 @@ Mapper is an algorithm for exploration, analysis and visualization of data.
    input
    filters
    cover
+   mapperoutputwindow
    ownpythoncode
+   mapper
    legal
 
 Indices and tables
