@@ -34,3 +34,7 @@ Version 0.1.6 03/21/2014:
 
   • Minor fixes and updates
 
+Version 0.1.7 09/11/2014
+
+  • Fixed OpenGL display in the GUI for both WxPython 2.8 and 3.0
+  • Fixed glitch with tab traversal in the GUI

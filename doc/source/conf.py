@@ -51,7 +51,7 @@ copyright = u'2011–2014, Daniel Müllner and Aravindakshan Babu'
 try:
     import mapper
     version = mapper.__version__
-    release = mapper.__version__
+    release = mapper.__version__ + ', dated ' + mapper.__date__
 except ImportError:
     version = 'unspecified'
     release = 'unspecified'
