@@ -17,8 +17,10 @@ for more information.
 
 '''GUI for the Mapper algorithm'''
 
-GUIversion = '0.1.0, dated July 8, 2013'
+GUIversion = '0.1.1, dated August 27, 2014'
 
+#import wxversion
+#wxversion.select('3.0', '2.8')
 import wx
 import os
 import sys
@@ -1621,23 +1623,48 @@ class FigureFrame(wx.Frame, ResizeableFrame, StatusUpdate):
 '''##############################################################
    ###  WxGL canvas
    ##############################################################'''
+'''
+All methods that start with "GL_deferred" use OpenGL commands that can only be
+called after the GLCanvas has been initialized. Unless a method with prefix
+GL_deferred is called from within such a prefixed method, it must always be
+called as
+
+    self.CallAfterInit(self.GL_deferred_XXX)
+
+instead of
+
+    self.GL_deferred_XXX()
+'''
+
+class DeferredExecution:
+    def __init__(self, parent):
+        self.toDo = []
+
+    def CallAfterInit(self, func):
+        self.toDo.append(func)
+
+    def ProcessDeferredCommands(self):
+        for func in self.toDo:
+            func()
+        del self.toDo
+        self.CallAfterInit = lambda x: x()
 
 import OpenGL.GL as GL
 import wx.glcanvas as glcanvas
 
-class WxGLCanvas(glcanvas.GLCanvas):
+class WxGLCanvas(glcanvas.GLCanvas, DeferredExecution):
     # Class variables
     border2d = 4.
 
     def __init__(self, parent):
-
         attribList = (glcanvas.WX_GL_RGBA,  # RGBA
                       # glcanvas.WX_GL_SAMPLE_BUFFERS, GL.GL_TRUE,
                       glcanvas.WX_GL_DOUBLEBUFFER,  # Double Buffered
                       glcanvas.WX_GL_DEPTH_SIZE, 24)  # 24 bit
 
         glcanvas.GLCanvas.__init__(self, parent, attribList=attribList)
-        self.GLContext = None
+        DeferredExecution.__init__(self, parent)
+        self.GLContext = glcanvas.GLContext(self)
 
         self.Data = None
         self.highlight = False
@@ -1667,18 +1694,16 @@ class WxGLCanvas(glcanvas.GLCanvas):
             ErrorDialog(self, 'The OpenGL window cannot be initialized.')
             raise EnvironmentError()
 
-        # Manually post paint event to avoid initial blank gray canvas
-        wx.PostEvent(self,
-                     wx.PyCommandEvent(wx.EVT_PAINT.typeId, self.GetId()))
-
     def OnEraseBackground(self, event):
         '''Process the erase background event.'''
         pass  # Do nothing, to avoid flashing on MSWin
 
-    def OnSize(self, event=None):
+    def OnSize(self, event):
+        self.CallAfterInit(self.GL_deferred_DoSetViewport)
+
+    def GL_deferred_DoSetViewport(self):
         # For OS X
-        if self.GLContext:
-            self.SetCurrent(self.GLContext)
+        self.SetCurrent(self.GLContext)
 
         w, h = self.GetClientSize()
         GL.glViewport(0, 0, w, h)
@@ -1708,7 +1733,7 @@ class WxGLCanvas(glcanvas.GLCanvas):
             GL.glScaled(c, c, c)
             GL.glPushMatrix()
             # Rotation to view angle
-            self.Project()
+            self.GL_deferred_Project()
         else:
             # 2 pixel extra margin
             S = min(np.maximum((w - self.PointSize - self.border2d,
@@ -1718,10 +1743,14 @@ class WxGLCanvas(glcanvas.GLCanvas):
             GL.glPushMatrix()
 
     def OnFirstPaint(self, event):
-        self.Bind(wx.EVT_PAINT, self.OnPaint)
         self.InitGL()
+        self.Bind(wx.EVT_PAINT, self.OnPaint)
+        #self.OnPaint(event) # remove ?
 
     def OnPaint(self, event):
+        dc = wx.PaintDC(self) # do not remove: http://wxpython.org/Phoenix/docs/html/PaintDC.html
+        self.SetCurrent(self.GLContext) # remove?
+
         # Make sure that the last image is displayed - avoids flickering
         GL.glFinish()
         GL.glClear(GL.GL_COLOR_BUFFER_BIT | GL.GL_DEPTH_BUFFER_BIT)
@@ -1734,9 +1763,8 @@ class WxGLCanvas(glcanvas.GLCanvas):
         self.SwapBuffers()
 
     def InitGL(self):
-        assert not self.GLContext
-        self.GLContext = glcanvas.GLContext(self)
-        self.SetCurrent(self.GLContext)
+        dc = wx.PaintDC(self) # do not remove: http://wxpython.org/Phoenix/docs/html/PaintDC.html
+        self.SetCurrent(self.GLContext) # do not remove
 
         GL.glClearColor(1, 1, 1, 1)
 
@@ -1799,9 +1827,11 @@ class WxGLCanvas(glcanvas.GLCanvas):
         # GL.glTexParameteri(GL.GL_TEXTURE_2D,GL.GL_TEXTURE_WRAP_T, GL.GL_CLAMP)
         GL.glTexParameterf(GL.GL_TEXTURE_2D, GL.GL_TEXTURE_PRIORITY, 0.9)
 
-        self.GenerateTexture()
+        self.GL_deferred_GenerateTexture()
 
-    def GenerateTexture(self):
+        self.ProcessDeferredCommands()
+
+    def GL_deferred_GenerateTexture(self):
         w = self.PointSize
         w2 = .5 * w - .5
         rs = (w2 + .5) * (w2 + .5)
@@ -1886,20 +1916,20 @@ class WxGLCanvas(glcanvas.GLCanvas):
 
     def ChangePointSize(self, d):
         self.PointSize = int(np.clip(self.PointSize + d, *self.PointSizes))
-        self.GenerateTexture()
-        self.OnSize()
+        self.CallAfterInit(self.GL_deferred_GenerateTexture)
+        self.CallAfterInit(self.GL_deferred_DoSetViewport)
 
     def RotatePre(self, a, v):
         if self.ThreeD:
             self.View.prerotate(a, v)
-            self.Project()
+            self.CallAfterInit(self.GL_deferred_Project)
 
     def RotatePost(self, a, v):
         if self.ThreeD:
             self.View.postrotate(a, v)
-            self.Project()
+            self.CallAfterInit(self.GL_deferred_Project)
 
-    def Project(self):
+    def GL_deferred_Project(self):
         GL.glMatrixMode(GL.GL_PROJECTION)
         GL.glPopMatrix()
         GL.glPushMatrix()
@@ -1919,12 +1949,13 @@ class WxGLCanvas(glcanvas.GLCanvas):
         if Delta == (0, 0): return
         scale = float(min(self.GetSize()))
         P = (2 * np.array(self.MousePos, dtype=np.float) - self.GetSize()) / scale
-        P = np.minimum(P, [1., 1.])
-        P = np.maximum(P, [-1., -1.]) * .5 * np.pi
+        np.clip(P, -1, 1, P)
+        P *= .5 * np.pi
         v = np.array((0., -np.cos(P[1]), np.sin(P[1])))
-        self.RotatePost(Delta.x / scale * 180, v)
-        v = np.array((np.cos(P[0]), 0., np.sin(P[0])))
-        self.RotatePost(-Delta.y / scale * 180, v)
+        w = np.array((np.cos(P[0]), 0., np.sin(P[0])))
+        q = (Delta.x * v - Delta.y * w) / scale * 180
+        r = np.sqrt(q.dot(q))
+        self.RotatePost(r, q/r)
         self.Refresh()
         self.MousePos = NewPos
 
@@ -1935,24 +1966,22 @@ class WxGLCanvas(glcanvas.GLCanvas):
             round(float(event.GetWheelRotation()) / event.GetWheelDelta()))
         self.Refresh()
 
-    def Display3d(self, Data, Filter):
+    def GL_deferred_Display3d(self):
         if not self.ThreeD:
             self.ThreeD = True
             self.View = Quaternion()
             self.View.postrotate(30, (0, 1, 0))
             self.View.postrotate(-25, (1, 0, 0))
-            self.Project()
-            self.OnSize()
-        self.Data = Data
-        self.Colors = self.Colormap(Filter)
+            self.GL_deferred_Project()
+            #self.OnSize()
 
-        Datamin = Data.min(axis=0)
-        Datamax = Data.max(axis=0)
+        Datamin = self.Data.min(axis=0)
+        Datamax = self.Data.max(axis=0)
         Center = .5 * (Datamin + Datamax)
-        Data_centered = Data - Center
+        Data_centered = self.Data - Center
         MaxR = np.sqrt((Data_centered * Data_centered).sum(axis=1).max())
         del Data_centered
-        WxGLCanvas.SetModelview(Center, MaxR)
+        WxGLCanvas.GL_deferred_SetModelview(Center, MaxR)
 
         GL.glEnable(GL.GL_DEPTH_TEST)
         GL.glClearDepth(1.)
@@ -1972,35 +2001,54 @@ class WxGLCanvas(glcanvas.GLCanvas):
         GL.glDisableClientState(GL.GL_VERTEX_ARRAY)
         GL.glEndList()
 
-    def Display2d(self, Data, Filter):
-        self.ThreeD = False
-        self.View = Quaternion()
-        self.Project()
-        self.Data = Data
+    def MakeColormap(self, Filter):
         self.Colors = self.Colormap(Filter)
 
-        Datamin = Data.min(axis=0)
-        Datamax = Data.max(axis=0)
+    def GL_deferred_Display(self):
+        dim = self.Data.shape[1]
+        if dim==2:
+            self.GL_deferred_Display2d()
+        elif dim==3:
+            self.GL_deferred_Display3d()
+        else:
+            raise AssertionError('Unreachable code. Please file a bug report.')
+
+    def GL_deferred_Display2d(self):
+        self.ThreeD = False
+        self.View = Quaternion()
+        self.GL_deferred_Project()
+        self.Data = Data
+
+        Datamin = self.Data.min(axis=0)
+        Datamax = self.Data.max(axis=0)
         Center = np.hstack((.5 * (Datamin + Datamax), 0))
         self.Max = .5 * (Datamax - Datamin)
-        WxGLCanvas.SetModelview(Center, 1)
+        WxGLCanvas.GL_deferred_SetModelview(Center, 1)
 
         GL.glDisable(GL.GL_DEPTH_TEST)
 
         GL.glDeleteLists(self.DisplayListStart, 3)
-        self.OnSize()
+        #self.OnSize()
 
     def Recolor(self, Filter):
-        self.Colors = self.Colormap(Filter)
-        self.ShowDataPoints(self.plist)
+        self.MakeColormap(Filter)
+        self.CallAfterInit(self.GL_deferred_ShowDataPoints)
 
-    def ShowDataPoints(self, plist):
+    def SetData(self, data):
+        self.Data = data
+        self.CallAfterInit(self.GL_deferred_Display)
+
+    def SetPList(self, plist):
+        self.plist = plist
+        self.CallAfterInit(self.GL_deferred_ShowDataPoints)
+
+    def GL_deferred_ShowDataPoints(self):
         GL.glDeleteLists(self.DisplayListStart, 2)
-        self.highlight = (plist is not None)
+        self.highlight = (self.plist is not None)
         if self.highlight:
             N = np.alen(self.Data)
             compl = np.ones(N, dtype=np.bool)
-            compl[plist] = False
+            compl[self.plist] = False
             Data = self.Data[compl, :]
             alpha = .1
             gray = .2
@@ -2020,8 +2068,8 @@ class WxGLCanvas(glcanvas.GLCanvas):
             GL.glDisable(GL.GL_TEXTURE_2D)
             GL.glEndList()
 
-            Data = self.Data[plist]
-            Colors = self.Colors[plist]
+            Data = self.Data[self.plist]
+            Colors = self.Colors[self.plist]
         else:
             Data = self.Data
             Colors = self.Colors
@@ -2040,11 +2088,10 @@ class WxGLCanvas(glcanvas.GLCanvas):
         GL.glEndList()
 
         self.Refresh()
-        self.plist = plist
 
     # TBD: Remove
     @staticmethod
-    def SetModelview(Center, MaxR):
+    def GL_deferred_SetModelview(Center, MaxR):
         GL.glMatrixMode(GL.GL_MODELVIEW)
         GL.glLoadIdentity()
         scale = 1. / MaxR
@@ -2756,8 +2803,7 @@ class NotebookDataChoice(wx.Notebook, StatusUpdate):
 
     def OnNotebookPageChanged(self, event):
         self.GetCurrentPage().PostData()
-        event = EvtContentChange(id=self.GetId())
-        wx.PostEvent(self, event)
+        wx.PostEvent(self, EvtContentChange(id=self.GetId()))
         event.Skip()
 
 class MyInputPane(CollapsiblePane, MapperJob):
@@ -3102,9 +3148,8 @@ class NotebookFilterChoice(wx.Notebook):
         event.Skip()
 
     def OnNotebookPageChanged(self, event):
+        wx.PostEvent(self, EvtContentChange(id=self.GetId()))
         event.Skip()
-        event = EvtContentChange(id=self.GetId())
-        wx.PostEvent(self, event)
 
     def GetValue(self):
         return self.GetCurrentPage().GetValue()
@@ -3995,6 +4040,7 @@ class MainPanel(wx.Panel, StatusUpdate, MapperJob):
 
         self.ValidDataDisplay = False
         self.ValidMapperDisplay = False
+        self.MapperOutputFrame = None
 
         Box = Vbox()
 
@@ -4217,18 +4263,14 @@ class MainPanel(wx.Panel, StatusUpdate, MapperJob):
             self.DataFrame.Show()
         else:
             self.DataFrame.Iconize(False)
-        self.DataFrame.Display(*args)
-        try:
-            frame = isinstance(self.MapperOutputFrame, MapperOutputFrame)
-        except AttributeError:
-            frame = False
 
-        self.ValidDataDisplay = True
-        if frame and self.ValidMapperDisplay:
+        if self.MapperOutputFrame and self.ValidMapperDisplay:
             nodes = self.MapperOutputFrame.GetHighlightedNodes()
             plist, highlighted_nodes = self.HighlightNodes(nodes)
         else:
             plist = None
+        self.DataFrame.Display(*args)
+        self.ValidDataDisplay = True
         self.DataFrame.ShowDataPoints(plist)  # xxx
         self.DataFrame.Raise()
 
@@ -4251,10 +4293,10 @@ class MainPanel(wx.Panel, StatusUpdate, MapperJob):
                                       MapperOutputFrame)
         except AttributeError:
             NewFrame = True
-        if NewFrame:
-            self.MapperOutputFrame = MapperOutputFrame(self)
-        else:
+        if self.MapperOutputFrame:
             self.MapperOutputFrame.Clear()
+        else:
+            self.MapperOutputFrame = MapperOutputFrame(self)
 
         self.MapperOutputFrame.Display(self.M, minsizes=minsizes)
 
@@ -4419,16 +4461,15 @@ class DataFrame(wx.Frame, ResizeableFrame):
         self.BalanceFilter()
 
         dim = self.Data.shape[1]
-        if dim == 2:
-            self.Canvas.Display2d(self.Data, self.FilterFinal)
-        elif dim == 3:
-            self.Canvas.Display3d(self.Data, self.FilterFinal)
-        else:
+        if dim not in (2,3):
             self.PostStatusUpdate('Cannot display {0}-dimensional data.' \
                                       .format(Data.shape[1]))
             del self.Data
             del self.Filter
             del self.FilterFinal
+            return
+        self.Canvas.MakeColormap(self.FilterFinal)
+        self.Canvas.SetData(self.Data)
 
     def BalanceFilter(self):
         if self.Balance.IsChecked():
@@ -4438,9 +4479,9 @@ class DataFrame(wx.Frame, ResizeableFrame):
         else:
             self.FilterFinal = self.Filter
 
-    def ShowDataPoints(self, *args):
+    def ShowDataPoints(self, plist):
         if self.valid_frame:
-            self.Canvas.ShowDataPoints(*args)
+            self.Canvas.SetPList(plist)
 
     def OptimalHeight(self, resx):
         dim = self.Data.shape[1]
