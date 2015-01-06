@@ -4520,8 +4520,8 @@ class MapperOutputFrame(FigureFrame):
         options_menu.Append(RecolorId, "Re&color\tAlt-C", "Recolor nodes")
         self.Bind(wx.EVT_MENU, self.OnNodesRecolor, id=RecolorId)
         ToDatabaseId = wx.NewId()
-        options_menu.Append(ToDatabaseId, "To Database",
-                            "Store mapper output in database")
+        options_menu.Append(ToDatabaseId, "To csv",
+                            "Store mapper output in csv files")  #Timothy McRoy. 
         self.Bind(wx.EVT_MENU, self.OnToDatabase, id=ToDatabaseId)
 
         ShowLabelsId = wx.NewId()
@@ -4797,6 +4797,7 @@ class MapperOutputFrame(FigureFrame):
 
     def OnToDatabase(self, event):
         print "To DB"
+        self.M.csv_all_nodes()
 
     def OptimalHeight(self, resx):
         x1, y1, x2, y2 = self.MarginCoords((resx, resx))

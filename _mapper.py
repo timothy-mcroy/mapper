@@ -335,7 +335,7 @@ def mapper(pcd, filt, cover, cutoff,
     M.add_info(cover = cover.info)
     M.add_info(cutoff = str(cutoff))
     M.add_info(cluster = str(cluster))
-
+    M.add_info(pcd = pcd) #Timothy McRoy for csv export
     return M
 
 def n_obs(dm):
