@@ -1,1 +1,0 @@
--L/usr/lib/x86_64-linux-gnu -lboost_thread -lboost_chrono -Wl,--gc-sections -Wl,-s

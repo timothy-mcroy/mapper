@@ -1,1 +1,0 @@
--pthread -I/usr/include -fvisibility=hidden -fno-common -fvisibility-inlines-hidden -ffunction-sections -fdata-sections
