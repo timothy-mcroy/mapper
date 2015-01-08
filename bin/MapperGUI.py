@@ -4542,9 +4542,15 @@ class MapperOutputFrame(FigureFrame):
         options_menu.Append(RecolorId, "Re&color\tAlt-C", "Recolor nodes")
         self.Bind(wx.EVT_MENU, self.OnNodesRecolor, id=RecolorId)
         ToCsvId = wx.NewId()
-        options_menu.Append(ToCsvId, "To csv",
+        options_menu.Append(ToCsvId, "To csvs",
                             "Store highlighted nodes in csv files.")  #Timothy McRoy.
         self.Bind(wx.EVT_MENU, self.OnToCSV, id=ToCsvId)
+
+        ToGroupedCsv = wx.NewId()
+        options_menu.Append(ToGroupedCsv, "To single csv",
+                            "Store highlighted nodes in single file") #Timothy McRoy.
+        self.Bind(wx.EVT_MENU, self.OnGroupToSingleFile, id = ToGroupedCsv)
+
 
         ShowLabelsId = wx.NewId()
         self.ShowLabels = wx.MenuItem(options_menu, ShowLabelsId,
@@ -4822,22 +4828,57 @@ class MapperOutputFrame(FigureFrame):
         if frame.path ==None: #User exited without selecting a directory
             frame.Destroy()
             return
-        self.CSV_Highlighted_Nodes(frame.path)
+        self.CSVHighlightedNodes(frame.path)
         frame.Destroy()
 
-    def CSV_Highlighted_Nodes(self,path):
+    def OnGroupToSingleFile (self, event):
+        frame = DirectorySelect()
+        if frame.path == None: #User exited without selecting a directory
+            frame.Destroy()
+            return
+        self.GroupCSV(frame.path)
+        frame.Destroy()
+
+    def GroupCSV(self , path):#Timothy McRoy
+        hlnodes = self.GetHighlightedNodes()            #retrieve highlighted nodes
+        if not len(hlnodes):
+            print ("No nodes selected.")
+            return
+        hlnodes = (self.M.nodes[i] for i in hlnodes)    #List of node objects
+        hlnodes = [index for node in hlnodes for index in node.points]
+        hlnodes.sort()
+        #Sorted list of all indexes in current selection
+        #It may be of interest to "fuzz" this list later, randomly adding or
+        #subtracting from each element in the index list.
+        grouped = (self.M.info["pcd"][i] for i in hlnodes)
+
+        import csv, time, os
+        t       = time.strftime("%m-%d-%y--%H:%M:%S")
+        origin  = os.getcwd()
+        os.chdir(path)
+        filename= "{0}-Nodes-{1}.csv".format(len(hlnodes) , t )
+        newfile = open(filename, 'wb')
+        writer  = csv.writer(newfile, dialect = 'excel')
+        for row in grouped:
+            writer.writerow(row)
+        newfile.close()
+        print("Finished writing points for {0}".format(filename))
+        os.chdir(origin)
+
+    def CSVHighlightedNodes(self,path):
        '''
        Written by Timothy McRoy. We want this to take the points
        from every highlighted node and write them to csv files.
        '''
+
        import csv , time, os
        t= time.strftime("%m-%d-%y--%H:%M:%S")
        origin = os.getcwd()
        os.chdir(path)
-
        os.mkdir("ToCSV-"+t) #Including time in filename so overwrites are protected.
        os.chdir("ToCSV-"+t)
        print("Created directory {0}".format(os.getcwd()))
+
        hlnodes = self.GetHighlightedNodes()
        hlnodes = [self.M.nodes[i] for i in hlnodes]
        if not hlnodes:
