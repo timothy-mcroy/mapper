@@ -505,25 +505,6 @@ class mapper_output:
                 A[edge[::-1]] = True
         return A
 
-    def csv_all_nodes(self):
-        '''
-        Written by Timothy McRoy.  We want this to take the points from every node and write them to every csv file.'''
-
-        import csv , time, os
-        t= time.strftime("%H:%M:%S")
-
-        os.mkdir("ToCSV-"+t)    #Including time in filename so overwrites are protected.
-        os.chdir("ToCSV-"+t)
-        for vertex in self.nodes:
-            data= [self.info["pcd"][i] for i in vertex.points]
-            filename = "{0}-Level-{1}-Nodes-{2}-Attribute.csv".format( vertex.level[0], len(vertex.points),vertex.attribute)
-            newfile  = open(filename, 'wb')
-            writer   = csv.writer(newfile, dialect='excel')
-            for row in data:
-                writer.writerow(row)
-            newfile.close()
-            print("Finished writing points for {0} \n".format(filename))
-        os.chdir("..")
     def to_db( self, cursor ):
 
         """

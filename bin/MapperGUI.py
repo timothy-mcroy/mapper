@@ -2221,6 +2221,8 @@ minusicon = [
 "X         X",
 "XXXXXXXXXXX"]
 
+
+
 class CollapsiblePane(wx.Panel):
     def __init__(self, parent, **kwargs):
         wx.Panel.__init__(self, parent)
@@ -2330,6 +2332,26 @@ def Vbox():
 
 def Hbox():
     return wx.BoxSizer(wx.HORIZONTAL)
+
+
+class DirectorySelect(wx.Frame):
+    def __init__(self):
+        wx.Frame.__init__(self, None)
+        self.onDir()
+
+    def onDir(self):
+        """
+        -Timothy McRoy-
+        Show the DirDialog and saves the chosen path in object state.
+        if path is None at the end, the user canceled the dialog box.
+        """
+        self.path = None
+        dlg = wx.DirDialog(self, "Please enter the directory that you want to save the files at:",
+                           style=wx.DD_DEFAULT_STYLE
+                           )
+        if dlg.ShowModal() == wx.ID_OK:
+            self.path= dlg.GetPath()
+        dlg.Destroy()
 
 class ChoicePanel(wx.Panel):
     def __init__(self, parent, ChoicesLabels, ChoicesPanels, label=None,
@@ -4519,10 +4541,10 @@ class MapperOutputFrame(FigureFrame):
         RecolorId = wx.NewId()
         options_menu.Append(RecolorId, "Re&color\tAlt-C", "Recolor nodes")
         self.Bind(wx.EVT_MENU, self.OnNodesRecolor, id=RecolorId)
-        ToDatabaseId = wx.NewId()
-        options_menu.Append(ToDatabaseId, "To csv",
-                            "Store mapper output in csv files")  #Timothy McRoy. 
-        self.Bind(wx.EVT_MENU, self.OnToDatabase, id=ToDatabaseId)
+        ToCsvId = wx.NewId()
+        options_menu.Append(ToCsvId, "To csv",
+                            "Store highlighted nodes in csv files.")  #Timothy McRoy.
+        self.Bind(wx.EVT_MENU, self.OnToCSV, id=ToCsvId)
 
         ShowLabelsId = wx.NewId()
         self.ShowLabels = wx.MenuItem(options_menu, ShowLabelsId,
@@ -4795,9 +4817,41 @@ class MapperOutputFrame(FigureFrame):
         self.Display(minsizes=self.minsizes)
         self.canvas.draw()
 
-    def OnToDatabase(self, event):
-        print "To DB"
-        self.M.csv_all_nodes()
+    def OnToCSV(self, event):
+        frame = DirectorySelect()
+        if frame.path ==None: #User exited without selecting a directory
+            frame.Destroy()
+            return
+        self.CSV_Highlighted_Nodes(frame.path)
+        frame.Destroy()
+
+    def CSV_Highlighted_Nodes(self,path):
+       '''
+       Written by Timothy McRoy. We want this to take the points
+       from every highlighted node and write them to csv files.
+       '''
+       import csv , time, os
+       t= time.strftime("%m-%d-%y--%H:%M:%S")
+       origin = os.getcwd()
+       os.chdir(path)
+
+       os.mkdir("ToCSV-"+t) #Including time in filename so overwrites are protected.
+       os.chdir("ToCSV-"+t)
+       print("Created directory {0}".format(os.getcwd()))
+       hlnodes = self.GetHighlightedNodes()
+       hlnodes = [self.M.nodes[i] for i in hlnodes]
+       if not hlnodes:
+           hlnodes = self.M.nodes
+       for vertex in hlnodes:
+           data= [self.M.info["pcd"][i] for i in vertex.points]
+           filename = "{0}-Nodes-{1}-Attribute.csv".format(len(vertex.points),vertex.attribute)
+           newfile = open(filename, 'wb')
+           writer = csv.writer(newfile, dialect='excel')
+           for row in data:
+               writer.writerow(row)
+           newfile.close()
+           print("Finished writing points for {0}".format(filename))
+       os.chdir(origin)
 
     def OptimalHeight(self, resx):
         x1, y1, x2, y2 = self.MarginCoords((resx, resx))
@@ -4874,7 +4928,7 @@ class ScaleGraphFrame(FigureFrame):
             wildcard=wildcard,
             defaultFile=ScaleGraphFrame.LastSaveFilename)
         if FileDialog.ShowModal() == wx.ID_OK:
-            path = FileDialog.GetPath()
+            pathd = FileDialog.GetPath()
             try:
                 FigureFrame.LastSaveDir, ScaleGraphFrame.LastSaveFilename = \
                     os.path.split(path)
